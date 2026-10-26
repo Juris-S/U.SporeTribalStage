@@ -62,7 +62,9 @@ namespace SporeTribal.Economy
         {
             foreach (VillagerUnit v in VillagerUnit.All)
             {
-                if (!v.IsSelected || !v.IsGathering) continue;
+                if (!v.IsSelected) continue;
+                if (v.GatherTarget == this) return true;
+                if (!v.IsGathering) continue;
                 float r = v.SearchRadius;
                 if ((v.transform.position - transform.position).sqrMagnitude <= r * r) return true;
             }
