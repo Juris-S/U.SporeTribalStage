@@ -24,7 +24,7 @@ namespace SporeTribal.Commands
 
             int[] assignment = SlotAssignment.Match(units, slots);
             for (int i = 0; i < units.Count; i++)
-                units[i].MoveTo(slots[assignment[i]]);
+                units[i].Accept(TribalOrder.Move(slots[assignment[i]]));
 
             OrderIssued?.Invoke(units, slots, assignment);
         }

@@ -19,10 +19,12 @@ namespace SporeTribal.Villagers
         [SerializeField] private Vector2 idleGlanceInterval = new Vector2(4f, 10f);
         [SerializeField] private float idleTurnSpeed = 90f;
         [SerializeField] private float gatherSeconds = 1.5f;
-        [SerializeField] private int carryCapacity = 3;
+        [SerializeField] private int carryCapacity = 10;
         [SerializeField] private float arriveDistance = 2.2f;
         [SerializeField] private float depositDistance = 3f;
         [SerializeField] private float searchRadius = 25f;
+        [SerializeField] private float villageRadius = 30f;
+        [SerializeField] private Vector2 wanderInterval = new Vector2(5f, 15f);
 
         private NavMeshAgent agent;
         private float nextGlanceTime;
@@ -30,7 +32,13 @@ namespace SporeTribal.Villagers
         private bool glancing;
         private string gatherStage;
         private Coroutine gatherRoutine;
-        private FoodNode spotNode;
+        private StandingSpots spots;
+        private Vector3? wanderCentre;
+        private float nextWanderTime;
+        private TribalOrder? order;
+        private int carried;
+        private float interruptedAt = -10f;
+        private OrderKind interruptedKind;
 
         private void Awake()
         {
@@ -47,6 +55,15 @@ namespace SporeTribal.Villagers
             {
                 glancing = false;
                 ScheduleGlance();
+                return;
+            }
+
+            if (wanderCentre is Vector3 centre && Time.time >= nextWanderTime)
+            {
+                nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
+                Vector2 offset = Random.insideUnitCircle * villageRadius;
+                if (NavMesh.SamplePosition(centre + new Vector3(offset.x, 0f, offset.y), out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                    agent.SetDestination(hit.position);
                 return;
             }
 
@@ -86,18 +103,46 @@ namespace SporeTribal.Villagers
             selectionRing.SetActive(selected);
         }
 
-        public string Intent => gatherStage != null ? $"Gather: {gatherStage}" : IsMoving ? "Move" : "Idle";
-
-        public void MoveTo(Vector3 destination)
+        public string OrderLabel => order is TribalOrder o && (o.Kind != OrderKind.Move || IsMoving) ? o.Kind.ToString() : "none";
+        public string BehaviourLabel
         {
-            agent.SetDestination(destination);
+            get
+            {
+                string step = gatherStage ?? (IsMoving ? (wanderCentre != null ? "wandering" : "walking") : glancing ? "looking around" : "idle");
+                return carried > 0 ? $"{step} | carrying {carried}" : step;
+            }
+        }
+        public string InterruptLabel => Time.time - interruptedAt < 2.5f ? $"{interruptedKind} cancelled" : null;
+
+        public void Accept(TribalOrder order)
+        {
+            if (this.order is TribalOrder previous && (gatherRoutine != null || IsMoving))
+            {
+                interruptedAt = Time.time;
+                interruptedKind = previous.Kind;
+            }
+            Cancel();
+            this.order = order;
+            switch (order.Kind)
+            {
+                case OrderKind.Move:
+                    agent.SetDestination(order.Point);
+                    break;
+                case OrderKind.Gather:
+                    gatherRoutine = StartCoroutine(GatherRoutine(order.Node));
+                    break;
+            }
         }
 
-        public void Gather(FoodNode node)
+        private void Cancel()
         {
             if (gatherRoutine != null) StopCoroutine(gatherRoutine);
+            gatherRoutine = null;
+            gatherStage = null;
+            carried = 0;
+            order = null;
+            wanderCentre = null;
             ReleaseSpot();
-            gatherRoutine = StartCoroutine(GatherRoutine(node));
         }
 
         private IEnumerator GatherRoutine(FoodNode node)
@@ -108,19 +153,15 @@ namespace SporeTribal.Villagers
                 if (!node.Available)
                 {
                     FoodNode next = FoodNode.Nearest(transform.position, searchRadius);
-                    if (next != null) node = next;
-                    else
-                    {
-                        gatherStage = "waiting for regrowth";
-                        yield return new WaitUntil(() => node.Available);
-                    }
+                    if (next == null) break;
+                    node = next;
                 }
 
                 gatherStage = "to food";
-                spotNode = node;
-                yield return WalkTo(node.ClaimSpot(this, transform.position, arriveDistance));
+                spots = node.Spots;
+                yield return WalkTo(spots.Claim(this, transform.position, arriveDistance));
 
-                int carried = 0;
+                carried = 0;
                 while (carried < carryCapacity && node.Available)
                 {
                     gatherStage = $"picking {carried + 1}/{carryCapacity}";
@@ -131,25 +172,29 @@ namespace SporeTribal.Villagers
                 if (carried == 0) continue;
 
                 gatherStage = $"home with {carried}";
-                yield return WalkTo(StandPoint(home.transform.position, depositDistance));
+                spots = home.Spots;
+                yield return WalkTo(spots.Claim(this, transform.position, depositDistance));
+                ReleaseSpot();
 
                 home.Deposit(carried);
+                carried = 0;
             }
             ReleaseSpot();
+            gatherStage = "no food left, returning to village";
+            spots = home.Spots;
+            yield return WalkTo(spots.Claim(this, transform.position, depositDistance));
+            ReleaseSpot();
+            order = null;
+            gatherRoutine = null;
             gatherStage = null;
+            wanderCentre = home.transform.position;
+            nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
         }
 
         private void ReleaseSpot()
         {
-            if (spotNode != null) spotNode.ReleaseSpot(this);
-            spotNode = null;
-        }
-
-        private Vector3 StandPoint(Vector3 point, float standDistance)
-        {
-            Vector3 offset = transform.position - point;
-            offset.y = 0f;
-            return offset.magnitude > standDistance ? point + offset.normalized * standDistance : transform.position;
+            spots?.Release(this);
+            spots = null;
         }
 
         private IEnumerator WalkTo(Vector3 stop)
@@ -157,7 +202,13 @@ namespace SporeTribal.Villagers
             if (NavMesh.SamplePosition(stop, out NavMeshHit hit, 2f, NavMesh.AllAreas)) stop = hit.position;
             agent.SetDestination(stop);
             yield return null;
-            while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance) yield return null;
+            float stalled = 0f;
+            while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance)
+            {
+                stalled = !agent.pathPending && agent.velocity.sqrMagnitude < 0.01f ? stalled + Time.deltaTime : 0f;
+                if (stalled > 2f) break;
+                yield return null;
+            }
         }
     }
 }
