@@ -10,6 +10,8 @@ namespace SporeTribal.Economy
         public static IReadOnlyList<FoodNode> All => all;
 
         [SerializeField] private int maxFood = 12;
+        [Tooltip("Physical clearance around the bush. Extra villagers spill over to a nearby node.")]
+        [SerializeField, Range(1, 8)] private int maxGatherers = 3;
         [SerializeField] private float regrowSeconds = 25f;
         [SerializeField] private Renderer[] fruit;
         [SerializeField] private Material ringMaterial;
@@ -24,11 +26,12 @@ namespace SporeTribal.Economy
         public StandingSpots Spots { get; private set; }
         public int Food => food;
         public bool Available => food > 0;
+        public bool HasRoom => Available && Spots.HasFree;
 
         private void Awake()
         {
             food = maxFood;
-            Spots = new StandingSpots(transform);
+            Spots = new StandingSpots(transform, maxGatherers);
             ring = GameObject.CreatePrimitive(PrimitiveType.Quad);
             Destroy(ring.GetComponent<Collider>());
             ring.name = "TargetRing";
@@ -89,7 +92,7 @@ namespace SporeTribal.Economy
             float bestSqr = maxRange * maxRange;
             foreach (FoodNode node in all)
             {
-                if (!node.Available) continue;
+                if (!node.HasRoom) continue;
                 float sqr = (node.transform.position - from).sqrMagnitude;
                 if (sqr < bestSqr) { bestSqr = sqr; best = node; }
             }

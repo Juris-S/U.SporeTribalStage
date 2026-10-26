@@ -154,12 +154,21 @@ namespace SporeTribal.Villagers
             Village home = FindAnyObjectByType<Village>();
             while (node != null)
             {
-                if (!node.Available)
+                if (!node.HasRoom)
                 {
                     FoodNode next = FoodNode.Nearest(node.transform.position, searchRadius);
-                    if (next == null) break;
-                    node = next;
-                    workNode = node;
+                    if (next != null)
+                    {
+                        node = next;
+                        workNode = node;
+                    }
+                    else if (node.Available)
+                    {
+                        gatherStage = "waiting for a spot";
+                        yield return new WaitForSeconds(0.5f);
+                        continue;
+                    }
+                    else break;
                 }
 
                 gatherStage = "to food";
