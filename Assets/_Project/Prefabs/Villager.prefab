@@ -240,3 +240,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Villagers.VillagerUnit
   selectionRing: {fileID: 746417529233186942}
+  movementVariance: 0.05
+  idleGlanceInterval: {x: 4, y: 10}
+  idleTurnSpeed: 90
+  gatherSeconds: 1.5
+  carryCapacity: 3
+  arriveDistance: 2.2
+  depositDistance: 3
+  searchRadius: 25
