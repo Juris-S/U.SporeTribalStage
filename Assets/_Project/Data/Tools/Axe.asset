@@ -19,3 +19,6 @@ MonoBehaviour:
   heldEuler: {x: 0, y: 270, z: 0}
   heldForwardTilt: 15
   heldScale: 1.2
+  damage: 9
+  razeDamage: 5
+  attackCooldown: 2

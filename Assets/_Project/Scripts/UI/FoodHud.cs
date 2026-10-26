@@ -1,7 +1,8 @@
+using SporeTribal.Economy;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace SporeTribal.Economy
+namespace SporeTribal.UI
 {
     [ExecuteAlways, RequireComponent(typeof(UIDocument))]
     public class FoodHud : MonoBehaviour

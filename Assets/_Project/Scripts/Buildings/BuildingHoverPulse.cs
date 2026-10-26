@@ -2,7 +2,7 @@ using SporeTribal.Utilities;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace SporeTribal.Economy
+namespace SporeTribal.Buildings
 {
     public class BuildingHoverPulse : MonoBehaviour
     {
@@ -53,10 +53,8 @@ namespace SporeTribal.Economy
         private static Transform FindHovered()
         {
             if (Mouse.current == null || !ScreenRaycast.TryRaycast(Mouse.current.position.ReadValue(), ~0, out RaycastHit hit)) return null;
-            var tool = hit.collider.GetComponentInParent<ToolBuilding>();
-            if (tool != null) return tool.transform;
-            var hut = hit.collider.GetComponentInParent<MainHut>();
-            return hut != null ? hut.transform : null;
+            var building = hit.collider.GetComponentInParent<Building>();
+            return building != null && building.IsStanding ? building.transform : null;
         }
 
         private void Cache(Transform building)

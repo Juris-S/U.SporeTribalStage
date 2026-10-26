@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace SporeTribal.Economy
+namespace SporeTribal.Definitions
 {
     [CreateAssetMenu(menuName = "Tribal/Tool", fileName = "Tool")]
     public class ToolDefinition : ScriptableObject
@@ -15,8 +15,19 @@ namespace SporeTribal.Economy
         [SerializeField] private float heldForwardTilt = 15f;
         [SerializeField] private float heldScale = 1.4f;
 
+        [Header("Combat")]
+        [Tooltip("Damage per hit. Zero means the tool is not a weapon and the villager fights unarmed.")]
+        [SerializeField] private int damage;
+        [Tooltip("Damage per hit against buildings. Zero means the villager razes with bare hands.")]
+        [SerializeField] private int razeDamage;
+        [Tooltip("Seconds between hits.")]
+        [SerializeField] private float attackCooldown = 2f;
+
         public string DisplayName => displayName;
         public int Cost => cost;
+        public int Damage => damage;
+        public int RazeDamage => razeDamage;
+        public float AttackCooldown => attackCooldown;
 
         public GameObject SpawnHeld(Transform hand)
         {

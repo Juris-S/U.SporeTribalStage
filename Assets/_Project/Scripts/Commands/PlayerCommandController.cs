@@ -1,9 +1,11 @@
+using SporeTribal.Buildings;
 using SporeTribal.Economy;
 using SporeTribal.Feedback;
 using SporeTribal.Inputs;
 using SporeTribal.Orders;
 using SporeTribal.Selection;
 using SporeTribal.Utilities;
+using SporeTribal.Villagers;
 using UnityEngine;
 
 namespace SporeTribal.Commands
@@ -16,6 +18,7 @@ namespace SporeTribal.Commands
         [SerializeField] private ClickPing clickPing;
         [SerializeField] private LayerMask groundMask = ~0;
         [SerializeField] private LayerMask resourceMask;
+        [SerializeField] private LayerMask unitMask;
 
         private void OnEnable() => input.CommandClicked += HandleCommand;
         private void OnDisable() => input.CommandClicked -= HandleCommand;
@@ -25,14 +28,20 @@ namespace SporeTribal.Commands
             if (selection.Selected.Count == 0) return;
 
             ClickTarget target;
+            if (ScreenRaycast.TryRaycast(screenPosition, unitMask, out RaycastHit unitHit) && unitHit.collider.GetComponentInParent<VillagerUnit>() is VillagerUnit unit)
+            {
+                Issue(ClickTarget.Villager(unit));
+                return;
+            }
+
             bool onResource = ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit);
             if (onResource && resourceHit.collider.GetComponentInParent<FoodNode>() is FoodNode node)
             {
                 target = ClickTarget.Resource(node, resourceHit.point);
             }
-            else if (onResource && resourceHit.collider.GetComponentInParent<ToolBuilding>() is ToolBuilding building)
+            else if (onResource && resourceHit.collider.GetComponentInParent<Building>() is Building building)
             {
-                target = ClickTarget.ToolSource(building, resourceHit.point);
+                target = ClickTarget.AtBuilding(building, resourceHit.point);
             }
             else if (onResource) return;
             else if (ScreenRaycast.TryRaycast(screenPosition, groundMask, out RaycastHit hit))
@@ -42,6 +51,11 @@ namespace SporeTribal.Commands
             }
             else return;
 
+            Issue(target);
+        }
+
+        private void Issue(ClickTarget target)
+        {
             OrderBatch batch = dispatcher.Issue(selection.Selected, target);
             if (batch.AllRefusedReason() is RefusalReason reason) Debug.Log($"[Order] All refused: {reason.Describe()}");
         }

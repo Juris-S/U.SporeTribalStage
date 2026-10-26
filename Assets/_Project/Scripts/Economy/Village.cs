@@ -19,7 +19,19 @@ namespace SporeTribal.Economy
         public StandingSpots Spots { get; private set; }
         public int Food { get; private set; }
 
+        public bool HasSurrendered { get; private set; }
+
+        public event System.Action<Vector3> Attacked;
+        public event System.Action<Village> Surrendered;
+
         private void Awake() => Spots = new StandingSpots(dropOffPoint != null ? dropOffPoint : transform);
+
+        [Tooltip("Tints this tribe's villagers so the two sides read apart on screen.")]
+        [SerializeField] private Color tribeColour = new Color(0.95f, 0.62f, 0.18f);
+
+        public Color TribeColour => tribeColour;
+
+        public bool IsHostileTo(Village other) => other != null && other != this && !HasSurrendered && !other.HasSurrendered;
 
         public void Deposit(int amount) => Food += amount;
 
@@ -28,6 +40,22 @@ namespace SporeTribal.Economy
             if (amount > Food) return false;
             Food -= amount;
             return true;
+        }
+
+        public int Withdraw(int amount)
+        {
+            int taken = Mathf.Clamp(amount, 0, Food);
+            Food -= taken;
+            return taken;
+        }
+
+        public void ReportAttack(Vector3 where) => Attacked?.Invoke(where);
+
+        public void Surrender()
+        {
+            if (HasSurrendered) return;
+            HasSurrendered = true;
+            Surrendered?.Invoke(this);
         }
     }
 }
