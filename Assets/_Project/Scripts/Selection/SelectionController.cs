@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SporeTribal.Economy;
 using SporeTribal.Inputs;
 using SporeTribal.Utilities;
 using SporeTribal.Villagers;
@@ -10,6 +11,8 @@ namespace SporeTribal.Selection
     {
         [SerializeField] private RTSInputController input;
         [SerializeField] private LayerMask unitMask = ~0;
+        [Tooltip("Only this tribe's villagers can be selected.")]
+        [SerializeField] private Village playerVillage;
 
         private readonly List<VillagerUnit> selected = new List<VillagerUnit>();
 
@@ -49,8 +52,11 @@ namespace SporeTribal.Selection
             }
         }
 
+        private void Update() => selected.RemoveAll(unit => unit == null || !unit.IsAlive);
+
         private void Add(VillagerUnit unit)
         {
+            if (unit.Home != playerVillage) return;
             selected.Add(unit);
             unit.SetSelected(true);
         }

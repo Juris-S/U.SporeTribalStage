@@ -1,3 +1,5 @@
+using SporeTribal.Buildings;
+using SporeTribal.Economy;
 using SporeTribal.Inputs;
 using SporeTribal.Selection;
 using SporeTribal.Utilities;
@@ -6,7 +8,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
-namespace SporeTribal.Economy
+namespace SporeTribal.UI
 {
     public class VillageHud : MonoBehaviour
     {
@@ -61,9 +63,11 @@ namespace SporeTribal.Economy
             if (Mouse.current == null) return;
             Vector2 mouse = Mouse.current.position.ReadValue();
             bool overPopup = hutOpen && hutPopup.Contains(new Vector2(mouse.x, Screen.height - mouse.y));
-            bool overHut = !Blocked(mouse) && ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit) && hit.collider.GetComponentInParent<MainHut>() != null;
+            MainHut hovered = !Blocked(mouse) && ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit) ? hit.collider.GetComponentInParent<MainHut>() : null;
+            bool overHut = hovered != null && hovered.Owner == village && hovered.IsStanding;
+            if (overHut) hut = hovered;
             if (overHut || overPopup) hutCloseAt = Time.unscaledTime + HutCloseDelay;
-            hutOpen = Time.unscaledTime < hutCloseAt;
+            hutOpen = Time.unscaledTime < hutCloseAt && hut != null && hut.IsStanding;
         }
 
         private bool Blocked(Vector2 screen)
@@ -98,7 +102,7 @@ namespace SporeTribal.Economy
             if (Blocked(mouse)) return;
             if (!ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit)) return;
             ToolBuilding building = hit.collider.GetComponentInParent<ToolBuilding>();
-            if (building == null || building.Tool == null || !AboveCollider(hit.collider, TooltipSize, out Rect rect)) return;
+            if (building == null || building.Tool == null || building.Owner != village || !building.IsStanding || !AboveCollider(hit.collider, TooltipSize, out Rect rect)) return;
 
             Color previous = GUI.color;
             GUI.color = village.Food >= building.Tool.Cost ? Color.white : new Color(1f, 0.5f, 0.5f);
@@ -108,12 +112,11 @@ namespace SporeTribal.Economy
 
         private void DrawHutPopup()
         {
-            if (hut == null) hut = FindAnyObjectByType<MainHut>();
             Collider c = hut != null ? hut.GetComponentInChildren<Collider>() : null;
             if (c == null || !AboveCollider(c, HutPopupSize, out hutPopup)) return;
 
             GUI.Box(hutPopup, "Main Hut");
-            bool roomToRecruit = VillagerUnit.All.Count < maxVillagers;
+            bool roomToRecruit = VillagerUnit.CountIn(village) < maxVillagers;
             GUI.enabled = roomToRecruit && village.Food >= recruitCost;
             var button = new Rect(hutPopup.x + 8f, hutPopup.y + 30f, hutPopup.width - 16f, Row);
             if (GUI.Button(button, roomToRecruit ? $"Recruit villager ({recruitCost})" : "Tribe is full")) Recruit();
