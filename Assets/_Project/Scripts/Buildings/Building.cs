@@ -1,3 +1,4 @@
+using SporeTribal.Villagers;
 using System.Collections;
 using System.Collections.Generic;
 using SporeTribal.Combat;
@@ -36,7 +37,10 @@ namespace SporeTribal.Buildings
 
         private void OnDamaged(GameObject source)
         {
-            if (owner != null) owner.ReportAttack(transform.position);
+            if (owner == null) return;
+            VillagerUnit attacker = source != null ? source.GetComponent<VillagerUnit>() : null;
+            owner.ReportAttack(transform.position, attacker != null ? attacker.Home : null);
+            if (attacker != null && owner.IsHostileTo(attacker.Home)) VillagerUnit.CallForHelp(owner, transform.position, attacker);
         }
 
         protected virtual void Collapse() => StartCoroutine(Sink());

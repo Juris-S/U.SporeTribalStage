@@ -38,6 +38,10 @@ namespace SporeTribal.Villagers
         [SerializeField] private float attackRange = 2f;
         [Tooltip("Idle or gathering villagers drop their task to fight an enemy who is fighting within this radius.")]
         [SerializeField] private float alertRadius = 10f;
+        [Tooltip("A hit villager or building cries out: free tribemates within this radius of the victim join the fight.")]
+        [SerializeField] private float helpRadius = 18f;
+        [Tooltip("Defenders keep picking targets anywhere within this radius of their own village centre (Spore's mZoningRadius), not just near themselves.")]
+        [SerializeField] private float leashRadius = 30f;
         [Tooltip("A target with this many attackers already is skipped for a free enemy nearby, so fights split into duels instead of one pile.")]
         [SerializeField] private int maxAttackersPerTarget = 2;
         [SerializeField] private float swingSeconds = 0.6f;
@@ -54,6 +58,7 @@ namespace SporeTribal.Villagers
 
         private const int WorkPriority = 40;
         private const int WanderPriority = 60;
+        private const float StallGiveUpSeconds = 1.5f;
         private const float AlertScanSeconds = 0.5f;
         private const float RepathSeconds = 0.2f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -67,6 +72,8 @@ namespace SporeTribal.Villagers
         private float nextGlanceTime;
         private float glanceYaw;
         private bool glancing;
+        private float glanceStarted;
+        private const float GlanceGiveUpSeconds = 4f;
         private string stage;
         private Coroutine routine;
         private StandingSpots spots;
@@ -84,6 +91,7 @@ namespace SporeTribal.Villagers
 
         private void Awake()
         {
+            priorityJitter = Random.Range(0, 15);
             agent = GetComponent<NavMeshAgent>();
             body = GetComponent<Renderer>();
             block = new MaterialPropertyBlock();
@@ -112,7 +120,9 @@ namespace SporeTribal.Villagers
         private void Update()
         {
             if (mourning) return;
-            agent.avoidancePriority = wanderCentre != null ? WanderPriority : WorkPriority;
+            agent.avoidancePriority = (wanderCentre != null ? WanderPriority : WorkPriority) + priorityJitter;
+            WatchStall();
+            agent.updateRotation = !glancing;
 
             if (Time.time >= nextAlertScan)
             {
@@ -140,7 +150,7 @@ namespace SporeTribal.Villagers
             {
                 var target = Quaternion.Euler(0f, glanceYaw, 0f);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, target, idleTurnSpeed * Time.deltaTime);
-                if (Quaternion.Angle(transform.rotation, target) < 0.5f)
+                if (Quaternion.Angle(transform.rotation, target) < 0.5f || Time.time - glanceStarted > GlanceGiveUpSeconds)
                 {
                     glancing = false;
                     ScheduleGlance();
@@ -149,6 +159,7 @@ namespace SporeTribal.Villagers
             else if (Time.time >= nextGlanceTime)
             {
                 glanceYaw = Random.Range(0f, 360f);
+                glanceStarted = Time.time;
                 glancing = true;
             }
         }
@@ -164,6 +175,22 @@ namespace SporeTribal.Villagers
             foreach (VillagerUnit unit in all)
                 if (unit.Home == village) count++;
             return count;
+        }
+
+        private float stalledFor;
+        private int priorityJitter;
+
+        private void WatchStall()
+        {
+            if (!agent.isOnNavMesh || agent.pathPending || !agent.hasPath || agent.remainingDistance <= agent.stoppingDistance || agent.velocity.sqrMagnitude > 0.01f)
+            {
+                stalledFor = 0f;
+                return;
+            }
+            stalledFor += Time.deltaTime;
+            if (stalledFor < StallGiveUpSeconds) return;
+            stalledFor = 0f;
+            agent.ResetPath();
         }
 
         public bool IsMoving => agent.isOnNavMesh && (agent.pathPending || agent.remainingDistance > agent.stoppingDistance);
@@ -346,10 +373,24 @@ namespace SporeTribal.Villagers
         private void OnDamaged(GameObject source)
         {
             StartCoroutine(Flash());
-            if (Home != null) Home.ReportAttack(transform.position);
-            if (!IsAlive || !CanAutoDefend || source == null) return;
-            if (source.GetComponent<VillagerUnit>() is VillagerUnit attacker && attacker.IsAlive && Home != null && Home.IsHostileTo(attacker.Home))
-                Defend(attacker);
+            if (Home != null) Home.ReportAttack(transform.position, source != null && source.GetComponent<VillagerUnit>() is VillagerUnit hitBy ? hitBy.Home : null);
+            if (!IsAlive || mourning || source == null) return;
+            if (!(source.GetComponent<VillagerUnit>() is VillagerUnit attacker) || !attacker.IsAlive || Home == null || !Home.IsHostileTo(attacker.Home)) return;
+
+            if (!IsFighting) Defend(attacker);
+            CallForHelp(Home, transform.position, attacker, this);
+        }
+
+        public static void CallForHelp(Village tribe, Vector3 where, VillagerUnit attacker, VillagerUnit except = null)
+        {
+            if (tribe == null || attacker == null || !attacker.IsAlive) return;
+            foreach (VillagerUnit ally in all)
+            {
+                if (ally == except || ally.Home != tribe || !ally.IsAlive || ally.IsFighting || !ally.CanAutoDefend) continue;
+                float range = ally.helpRadius;
+                if ((ally.transform.position - where).sqrMagnitude > range * range) continue;
+                ally.Defend(attacker);
+            }
         }
 
         private IEnumerator AttackRoutine(VillagerUnit target)
@@ -506,13 +547,16 @@ namespace SporeTribal.Villagers
             {
                 if (!other.IsAlive || !Home.IsHostileTo(other.Home)) continue;
                 float distance = Vector3.Distance(other.transform.position, transform.position);
-                if (distance > alertRadius && other != current) continue;
+                if (other != current && distance > alertRadius && !InLeash(other)) continue;
                 int crowd = OthersAttacking(other);
                 float score = distance + crowd * CrowdPenalty + (crowd >= maxAttackersPerTarget ? 1000f : 0f);
                 if (score < bestScore) { bestScore = score; best = other; }
             }
             return best;
         }
+
+        private bool InLeash(VillagerUnit other) =>
+            (other.transform.position - Home.DropOffCentre).sqrMagnitude <= leashRadius * leashRadius;
 
         private VillagerUnit NearestHostile(float radius, bool attackingOnly)
         {

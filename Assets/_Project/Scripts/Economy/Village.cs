@@ -19,6 +19,10 @@ namespace SporeTribal.Economy
         public StandingSpots Spots { get; private set; }
         public int Food { get; private set; }
 
+        [Header("Relationships")]
+        [Tooltip("How much a single hit on this tribe sours its opinion of the attacker's tribe.")]
+        [SerializeField, Min(0)] private int offencePerHit = 10;
+
         public bool HasSurrendered { get; private set; }
 
         public event System.Action<Vector3> Attacked;
@@ -32,6 +36,16 @@ namespace SporeTribal.Economy
         public Color TribeColour => tribeColour;
 
         public bool IsHostileTo(Village other) => other != null && other != this && !HasSurrendered && !other.HasSurrendered;
+
+        private readonly System.Collections.Generic.Dictionary<Village, int> opinions = new System.Collections.Generic.Dictionary<Village, int>();
+
+        public int RelationshipTo(Village other) => other != null && opinions.TryGetValue(other, out int value) ? value : 0;
+
+        public void Offend(Village by, int amount)
+        {
+            if (by == null || by == this) return;
+            opinions[by] = Mathf.Clamp(RelationshipTo(by) - amount, -100, 100);
+        }
 
         public void Deposit(int amount) => Food += amount;
 
@@ -49,7 +63,11 @@ namespace SporeTribal.Economy
             return taken;
         }
 
-        public void ReportAttack(Vector3 where) => Attacked?.Invoke(where);
+        public void ReportAttack(Vector3 where, Village attacker = null)
+        {
+            Offend(attacker, offencePerHit);
+            Attacked?.Invoke(where);
+        }
 
         public void Surrender()
         {

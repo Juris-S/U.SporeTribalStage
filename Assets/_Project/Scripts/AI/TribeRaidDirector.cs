@@ -11,6 +11,8 @@ namespace SporeTribal.AI
     [RequireComponent(typeof(Village))]
     public class TribeRaidDirector : MonoBehaviour
     {
+        private const float ForcedRetrySeconds = 2f;
+
         public enum Alert { FoodRaidersComing, RaidersComing, ThiefIntercepted }
 
         [SerializeField] private OrderDispatcher dispatcher;
@@ -37,6 +39,7 @@ namespace SporeTribal.AI
 
         private Village village;
         private float[] nextCheck;
+        private bool[] armed;
         private bool[] forced;
         private readonly Dictionary<RaidDefinition, IRaidRun> running = new Dictionary<RaidDefinition, IRaidRun>();
         private readonly List<RaidDefinition> finished = new List<RaidDefinition>();
@@ -47,8 +50,9 @@ namespace SporeTribal.AI
         {
             village = GetComponent<Village>();
             nextCheck = new float[plans.Length];
+            armed = new bool[plans.Length];
             forced = new bool[plans.Length];
-            for (int i = 0; i < plans.Length; i++) nextCheck[i] = Time.time + plans[i].InitialDelay;
+            for (int i = 0; i < plans.Length; i++) nextCheck[i] = float.MaxValue;
         }
 
         private void Update()
@@ -89,11 +93,34 @@ namespace SporeTribal.AI
 
             for (int i = 0; i < plans.Length; i++)
             {
+                if (!forced[i] && !Arm(i)) continue;
                 if (Time.time < nextCheck[i] || running.ContainsKey(plans[i])) continue;
-                bool launched = TryLaunch(plans[i], members, forced[i]);
-                nextCheck[i] = Time.time + (launched ? plans[i].TimeBetweenExecution : plans[i].CheckTime);
+                bool wasForced = forced[i];
+                bool launched = TryLaunch(plans[i], members, wasForced);
+                nextCheck[i] = Time.time + (launched ? plans[i].TimeBetweenExecution : wasForced ? ForcedRetrySeconds : plans[i].CheckTime);
                 if (launched) forced[i] = false;
             }
+        }
+
+        private bool Arm(int i)
+        {
+            bool eligible = target != null && village.IsHostileTo(target)
+                && plans[i].RelationshipAllows(village.RelationshipTo(target))
+                && plans[i].PopulationAllows(Population(target));
+            if (!eligible) { armed[i] = false; nextCheck[i] = float.MaxValue; return false; }
+            if (!armed[i])
+            {
+                armed[i] = true;
+                nextCheck[i] = Mathf.Min(nextCheck[i], Time.time + plans[i].InitialDelay);
+            }
+            return true;
+        }
+
+        private static int Population(Village of)
+        {
+            int count = 0;
+            foreach (VillagerUnit unit in VillagerUnit.All) if (unit.Home == of) count++;
+            return count;
         }
 
         private void Force(RaidDefinition.Objective objective, float delay)
@@ -109,7 +136,11 @@ namespace SporeTribal.AI
 
         private bool TryLaunch(RaidDefinition plan, List<VillagerUnit> members, bool force)
         {
-            if (target == null || !village.IsHostileTo(target)) return false;
+            if (target == null || !village.IsHostileTo(target))
+            {
+                if (force) Debug.LogWarning($"{name}: forced {plan.DisplayName} refused, no hostile target (target={(target != null ? target.name : "none")}).", this);
+                return false;
+            }
             if (!force && (!plan.FoodAllows(village.Food) || Random.Range(0f, 100f) >= plan.Frequency)) return false;
 
             var squad = new List<VillagerUnit>();
@@ -119,7 +150,11 @@ namespace SporeTribal.AI
                 if (squad.Count >= Mathf.Min(plan.DesiredMembers, spare)) break;
                 if (!unit.IsAttacking && !Owns(unit)) squad.Add(unit);
             }
-            if (squad.Count < plan.RequiredMembers) return false;
+            if (squad.Count < plan.RequiredMembers)
+            {
+                if (force) Debug.LogWarning($"{name}: forced {plan.DisplayName} waiting, {squad.Count} free of {plan.RequiredMembers} needed ({members.Count} fit members, {minHomeGuard} kept home).", this);
+                return false;
+            }
 
             Vector3 rally = rallyPoint != null ? rallyPoint.position : village.DropOffCentre;
             switch (plan.Goal)

@@ -23,4 +23,6 @@ MonoBehaviour:
   memberTools: []
   minOwnFood: 0
   maxOwnFood: 30
+  minRelationship: -100
+  maxRelationship: 100
   stealAmount: 10
