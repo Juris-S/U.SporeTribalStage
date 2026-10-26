@@ -1,0 +1,199 @@
+using System.Collections.Generic;
+using SporeTribal.Commands;
+using SporeTribal.Selection;
+using SporeTribal.Villagers;
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace SporeTribal.Debugging
+{
+    public class NavMeshDebugView : MonoBehaviour
+    {
+        [SerializeField] private SelectionController selection;
+        [SerializeField] private MoveOrderDispatcher dispatcher;
+        [SerializeField] private Material lineMaterial;
+        [SerializeField] private Key toggleKey = Key.N;
+        [SerializeField] private float lineWidth = 0.12f;
+        [SerializeField] private float lift = 0.06f;
+        [SerializeField] private float slotRadius = 0.4f;
+
+        private const int RingSegments = 24;
+
+        private struct Label
+        {
+            public Vector3 World;
+            public string Text;
+            public Color Colour;
+        }
+
+        private readonly List<LineRenderer> pathLines = new List<LineRenderer>();
+        private readonly List<LineRenderer> slotRings = new List<LineRenderer>();
+        private readonly List<Label> labels = new List<Label>();
+        private readonly List<Vector3> points = new List<Vector3>();
+
+        private Transform root;
+        private bool visible;
+        private VillagerUnit[] orderUnits = System.Array.Empty<VillagerUnit>();
+        private Vector3[] orderSlots;
+        private int[] orderAssignment;
+
+        private void Awake()
+        {
+            root = new GameObject("NavMesh Debug Lines").transform;
+            root.SetParent(transform, false);
+            root.gameObject.SetActive(false);
+        }
+
+        private void OnEnable() => dispatcher.OrderIssued += HandleOrder;
+        private void OnDisable() => dispatcher.OrderIssued -= HandleOrder;
+
+        private void HandleOrder(IReadOnlyList<VillagerUnit> units, Vector3[] slots, int[] assignment)
+        {
+            var copy = new VillagerUnit[units.Count];
+            for (int i = 0; i < copy.Length; i++) copy[i] = units[i];
+            orderUnits = copy;
+            orderSlots = slots;
+            orderAssignment = assignment;
+        }
+
+        private void Update()
+        {
+            if (Keyboard.current != null && Keyboard.current[toggleKey].wasPressedThisFrame)
+            {
+                visible = !visible;
+                root.gameObject.SetActive(visible);
+            }
+
+            if (!visible) return;
+
+            labels.Clear();
+            int paths = 0, rings = 0;
+
+            foreach (VillagerUnit unit in selection.Selected)
+            {
+                Color colour = ColourFor(unit);
+
+                if (unit.IsMoving && BuildRemainingPath(unit))
+                    ShowPath(GetLine(pathLines, ref paths, false), colour);
+
+                int index = System.Array.IndexOf(orderUnits, unit);
+                if (orderSlots == null || index < 0) continue;
+
+                int slot = orderAssignment[index];
+                ShowRing(GetLine(slotRings, ref rings, true), orderSlots[slot], colour);
+
+                string number = (slot + 1).ToString();
+                labels.Add(new Label { World = orderSlots[slot] + Vector3.up * 0.3f, Text = number, Colour = colour });
+                labels.Add(new Label { World = unit.transform.position + Vector3.up * 1.6f, Text = number, Colour = colour });
+            }
+
+            HideFrom(pathLines, paths);
+            HideFrom(slotRings, rings);
+        }
+
+        private bool BuildRemainingPath(VillagerUnit unit)
+        {
+            Vector3[] corners = unit.PathCorners;
+            if (corners.Length < 2) return false;
+
+            Vector3 pos = unit.transform.position;
+            int segment = 0;
+            float best = float.MaxValue;
+            for (int i = 0; i < corners.Length - 1; i++)
+            {
+                float d = DistanceToSegment(pos, corners[i], corners[i + 1]);
+                if (d < best) { best = d; segment = i; }
+            }
+
+            points.Clear();
+            points.Add(new Vector3(pos.x, corners[segment].y, pos.z));
+            for (int i = segment + 1; i < corners.Length; i++) points.Add(corners[i]);
+            return true;
+        }
+
+        private void ShowPath(LineRenderer line, Color colour)
+        {
+            Style(line, colour, false);
+            line.positionCount = points.Count;
+            for (int i = 0; i < points.Count; i++) line.SetPosition(i, points[i] + Vector3.up * lift);
+        }
+
+        private void ShowRing(LineRenderer line, Vector3 centre, Color colour)
+        {
+            Style(line, colour, true);
+            line.positionCount = RingSegments;
+            for (int i = 0; i < RingSegments; i++)
+            {
+                float a = i * Mathf.PI * 2f / RingSegments;
+                line.SetPosition(i, centre + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * slotRadius + Vector3.up * lift);
+            }
+        }
+
+        private void Style(LineRenderer line, Color colour, bool loop)
+        {
+            line.loop = loop;
+            line.startWidth = line.endWidth = lineWidth;
+            line.startColor = line.endColor = colour;
+        }
+
+        private LineRenderer GetLine(List<LineRenderer> pool, ref int used, bool ring)
+        {
+            if (used == pool.Count)
+            {
+                var go = new GameObject(ring ? "Slot Ring" : "Path");
+                go.transform.SetParent(root, false);
+                var line = go.AddComponent<LineRenderer>();
+                line.sharedMaterial = lineMaterial;
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                line.numCornerVertices = 4;
+                pool.Add(line);
+            }
+
+            LineRenderer result = pool[used++];
+            result.gameObject.SetActive(true);
+            return result;
+        }
+
+        private static void HideFrom(List<LineRenderer> pool, int firstUnused)
+        {
+            for (int i = firstUnused; i < pool.Count; i++) pool[i].gameObject.SetActive(false);
+        }
+
+        private static Color ColourFor(VillagerUnit unit)
+        {
+            IReadOnlyList<VillagerUnit> all = VillagerUnit.All;
+            int index = 0;
+            for (int i = 0; i < all.Count; i++) if (all[i] == unit) { index = i; break; }
+            return Color.HSVToRGB(index / (float)Mathf.Max(all.Count, 1), 0.6f, 1f);
+        }
+
+        private static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)
+        {
+            p.y = a.y = b.y = 0f;
+            Vector3 ab = b - a;
+            float t = ab.sqrMagnitude < 1e-6f ? 0f : Mathf.Clamp01(Vector3.Dot(p - a, ab) / ab.sqrMagnitude);
+            return Vector3.Distance(p, a + ab * t);
+        }
+
+        private void OnGUI()
+        {
+            if (!visible) return;
+
+            Camera cam = Camera.main;
+            var style = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+
+            foreach (Label label in labels)
+            {
+                Vector3 screen = cam.WorldToScreenPoint(label.World);
+                if (screen.z <= 0f) continue;
+
+                var rect = new Rect(screen.x - 40f, Screen.height - screen.y - 20f, 80f, 40f);
+                style.normal.textColor = Color.black;
+                GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), label.Text, style);
+                style.normal.textColor = label.Colour;
+                GUI.Label(rect, label.Text, style);
+            }
+        }
+    }
+}
