@@ -13,6 +13,7 @@ namespace SporeTribal.Debugging
         [SerializeField] private MoveOrderDispatcher dispatcher;
         [SerializeField] private Material lineMaterial;
         [SerializeField] private Key toggleKey = Key.N;
+        [SerializeField] private Key allKey = Key.M;
         [SerializeField] private float lineWidth = 0.12f;
         [SerializeField] private float lift = 0.06f;
         [SerializeField] private float slotRadius = 0.4f;
@@ -24,6 +25,7 @@ namespace SporeTribal.Debugging
             public Vector3 World;
             public string Text;
             public Color Colour;
+            public bool Small;
         }
 
         private readonly List<LineRenderer> pathLines = new List<LineRenderer>();
@@ -33,6 +35,7 @@ namespace SporeTribal.Debugging
 
         private Transform root;
         private bool visible;
+        private bool showAll;
         private VillagerUnit[] orderUnits = System.Array.Empty<VillagerUnit>();
         private Vector3[] orderSlots;
         private int[] orderAssignment;
@@ -58,10 +61,10 @@ namespace SporeTribal.Debugging
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current[toggleKey].wasPressedThisFrame)
+            if (Keyboard.current != null)
             {
-                visible = !visible;
-                root.gameObject.SetActive(visible);
+                if (Keyboard.current[toggleKey].wasPressedThisFrame) Toggle(false);
+                if (Keyboard.current[allKey].wasPressedThisFrame) Toggle(true);
             }
 
             if (!visible) return;
@@ -69,9 +72,11 @@ namespace SporeTribal.Debugging
             labels.Clear();
             int paths = 0, rings = 0;
 
-            foreach (VillagerUnit unit in selection.Selected)
+            IEnumerable<VillagerUnit> units = showAll ? VillagerUnit.All : selection.Selected;
+            foreach (VillagerUnit unit in units)
             {
                 Color colour = ColourFor(unit);
+                labels.Add(new Label { World = unit.transform.position + Vector3.up * 2.4f, Text = unit.Intent, Colour = colour, Small = true });
 
                 if (unit.IsMoving && BuildRemainingPath(unit))
                     ShowPath(GetLine(pathLines, ref paths, false), colour);
@@ -89,6 +94,13 @@ namespace SporeTribal.Debugging
 
             HideFrom(pathLines, paths);
             HideFrom(slotRings, rings);
+        }
+
+        private void Toggle(bool all)
+        {
+            visible = !(visible && showAll == all);
+            showAll = all;
+            root.gameObject.SetActive(visible);
         }
 
         private bool BuildRemainingPath(VillagerUnit unit)
@@ -165,7 +177,7 @@ namespace SporeTribal.Debugging
             IReadOnlyList<VillagerUnit> all = VillagerUnit.All;
             int index = 0;
             for (int i = 0; i < all.Count; i++) if (all[i] == unit) { index = i; break; }
-            return Color.HSVToRGB(index / (float)Mathf.Max(all.Count, 1), 0.6f, 1f);
+            return Color.HSVToRGB(index / (float)Mathf.Max(all.Count, 1), 0.6f, 0.85f);
         }
 
         private static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)
@@ -176,23 +188,38 @@ namespace SporeTribal.Debugging
             return Vector3.Distance(p, a + ab * t);
         }
 
+        private GUIStyle[] styles;
+
+        private GUIStyle StyleFor(bool small)
+        {
+            if (styles == null)
+            {
+                styles = new GUIStyle[2];
+                for (int i = 0; i < 2; i++)
+                {
+                    styles[i] = new GUIStyle(GUI.skin.label) { fontSize = i == 0 ? 26 : 16, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, richText = true };
+                    styles[i].normal.textColor = Color.white;
+                }
+            }
+            return styles[small ? 1 : 0];
+        }
+
         private void OnGUI()
         {
-            if (!visible) return;
+            if (!visible || Event.current.type != EventType.Repaint) return;
 
             Camera cam = Camera.main;
-            var style = new GUIStyle(GUI.skin.label) { fontSize = 26, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
 
             foreach (Label label in labels)
             {
                 Vector3 screen = cam.WorldToScreenPoint(label.World);
                 if (screen.z <= 0f) continue;
 
-                var rect = new Rect(screen.x - 40f, Screen.height - screen.y - 20f, 80f, 40f);
-                style.normal.textColor = Color.black;
-                GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), label.Text, style);
-                style.normal.textColor = label.Colour;
-                GUI.Label(rect, label.Text, style);
+                GUIStyle style = StyleFor(label.Small);
+                float width = label.Small ? 200f : 80f;
+                var rect = new Rect(screen.x - width * 0.5f, Screen.height - screen.y - 20f, width, 40f);
+                GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), $"<color=#000000CC>{label.Text}</color>", style);
+                GUI.Label(rect, $"<color=#{ColorUtility.ToHtmlStringRGB(label.Colour)}>{label.Text}</color>", style);
             }
         }
     }
