@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf9e34e66c63171499f43905cca5274a, type: 3}
   m_Name: StealFood1
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Definitions.RaidDefinition
-  displayName: Food thief (stealfood1)
+  displayName: Food thief
   objective: 1
   initialDelay: 60
   checkTime: 180

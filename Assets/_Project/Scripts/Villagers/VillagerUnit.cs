@@ -40,7 +40,7 @@ namespace SporeTribal.Villagers
         [SerializeField] private float alertRadius = 10f;
         [Tooltip("A hit villager or building cries out: free tribemates within this radius of the victim join the fight.")]
         [SerializeField] private float helpRadius = 18f;
-        [Tooltip("Defenders keep picking targets anywhere within this radius of their own village centre (Spore's mZoningRadius), not just near themselves.")]
+        [Tooltip("Defenders keep picking targets anywhere within this radius of their own village centre, not just near themselves.")]
         [SerializeField] private float leashRadius = 30f;
         [Tooltip("A target with this many attackers already is skipped for a free enemy nearby, so fights split into duels instead of one pile.")]
         [SerializeField] private int maxAttackersPerTarget = 2;
