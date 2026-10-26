@@ -13,6 +13,8 @@ namespace SporeTribal.Villagers
         public static IReadOnlyList<VillagerUnit> All => all;
 
         [SerializeField] private GameObject selectionRing;
+        [Tooltip("Unscaled anchor under the body where the equipped tool is held.")]
+        [SerializeField] private Transform hand;
         [Tooltip("Each villager rolls its speed and turn speed within +/- this fraction, once, so a group never moves in lockstep.")]
         [SerializeField, Range(0f, 0.2f)] private float movementVariance = 0.05f;
         [Tooltip("Seconds between idle glances while standing still (min, max).")]
@@ -21,12 +23,14 @@ namespace SporeTribal.Villagers
         [SerializeField] private float gatherSeconds = 1.5f;
         [SerializeField] private int carryCapacity = 10;
         [SerializeField] private float arriveDistance = 2.2f;
-        [SerializeField] private float depositDistance = 3f;
         [SerializeField] private float searchRadius = 25f;
-        [SerializeField] private float villageRadius = 30f;
         [SerializeField] private Vector2 wanderInterval = new Vector2(5f, 15f);
 
+        private const int WorkPriority = 40;
+        private const int WanderPriority = 60;
+
         private NavMeshAgent agent;
+        private GameObject heldTool;
         private float nextGlanceTime;
         private float glanceYaw;
         private bool glancing;
@@ -50,8 +54,17 @@ namespace SporeTribal.Villagers
             SetSelected(false);
         }
 
+        private void Start()
+        {
+            if (Home == null) return;
+            wanderCentre = Home.DropOffCentre;
+            nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
+        }
+
         private void Update()
         {
+            agent.avoidancePriority = wanderCentre != null ? WanderPriority : WorkPriority;
+
             if (IsMoving)
             {
                 glancing = false;
@@ -62,7 +75,7 @@ namespace SporeTribal.Villagers
             if (wanderCentre is Vector3 centre && Time.time >= nextWanderTime)
             {
                 nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
-                Vector2 offset = Random.insideUnitCircle * villageRadius;
+                Vector2 offset = Random.insideUnitCircle * Home.WanderRadius;
                 if (NavMesh.SamplePosition(centre + new Vector3(offset.x, 0f, offset.y), out NavMeshHit hit, 4f, NavMesh.AllAreas))
                     agent.SetDestination(hit.position);
                 return;
@@ -95,6 +108,15 @@ namespace SporeTribal.Villagers
         public Vector3[] PathCorners => agent.hasPath ? agent.path.corners : System.Array.Empty<Vector3>();
 
         public bool IsSelected { get; private set; }
+        public Village Home { get; set; }
+        public ToolDefinition Tool { get; private set; }
+
+        public void Equip(ToolDefinition tool)
+        {
+            if (heldTool != null) Destroy(heldTool);
+            Tool = tool;
+            heldTool = tool.SpawnHeld(hand);
+        }
         public bool IsGathering => gatherStage != null;
         public float SearchRadius => searchRadius;
         public FoodNode GatherTarget => workNode;
@@ -134,6 +156,9 @@ namespace SporeTribal.Villagers
                     workNode = order.Node;
                     gatherRoutine = StartCoroutine(GatherRoutine(order.Node));
                     break;
+                case OrderKind.Equip:
+                    gatherRoutine = StartCoroutine(EquipRoutine(order.Building));
+                    break;
             }
         }
 
@@ -151,7 +176,7 @@ namespace SporeTribal.Villagers
 
         private IEnumerator GatherRoutine(FoodNode node)
         {
-            Village home = FindAnyObjectByType<Village>();
+            Village home = Home;
             while (node != null)
             {
                 if (!node.HasRoom)
@@ -187,7 +212,7 @@ namespace SporeTribal.Villagers
 
                 gatherStage = $"home with {carried}";
                 spots = home.Spots;
-                yield return WalkTo(spots.Claim(this, transform.position, depositDistance));
+                yield return WalkTo(spots.Claim(this, transform.position, home.DropOffRadius));
                 ReleaseSpot();
 
                 home.Deposit(carried);
@@ -196,13 +221,27 @@ namespace SporeTribal.Villagers
             ReleaseSpot();
             gatherStage = "no food left, returning to village";
             spots = home.Spots;
-            yield return WalkTo(spots.Claim(this, transform.position, depositDistance));
+            yield return WalkTo(spots.Claim(this, transform.position, home.DropOffRadius));
             ReleaseSpot();
             order = null;
             workNode = null;
             gatherRoutine = null;
             gatherStage = null;
-            wanderCentre = home.transform.position;
+            wanderCentre = home.DropOffCentre;
+            nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
+        }
+
+        private IEnumerator EquipRoutine(ToolBuilding building)
+        {
+            spots = building.Spots;
+            yield return WalkTo(spots.Claim(this, transform.position, building.StandRadius));
+            ReleaseSpot();
+
+            Village home = Home;
+            if (Tool != building.Tool && home.TrySpend(building.Tool.Cost)) Equip(building.Tool);
+            order = null;
+            gatherRoutine = null;
+            wanderCentre = home.DropOffCentre;
             nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
         }
 

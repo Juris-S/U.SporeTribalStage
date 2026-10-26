@@ -25,11 +25,16 @@ namespace SporeTribal.Commands
             if (selection.Selected.Count == 0) return;
 
             ClickTarget target;
-            if (ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit)
-                && resourceHit.collider.GetComponentInParent<FoodNode>() is FoodNode node)
+            bool onResource = ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit);
+            if (onResource && resourceHit.collider.GetComponentInParent<FoodNode>() is FoodNode node)
             {
                 target = ClickTarget.Resource(node, resourceHit.point);
             }
+            else if (onResource && resourceHit.collider.GetComponentInParent<ToolBuilding>() is ToolBuilding building)
+            {
+                target = ClickTarget.ToolSource(building, resourceHit.point);
+            }
+            else if (onResource) return;
             else if (ScreenRaycast.TryRaycast(screenPosition, groundMask, out RaycastHit hit))
             {
                 target = ClickTarget.Ground(hit.point);

@@ -17,6 +17,9 @@ namespace SporeTribal.Inputs
         public event Action<Vector2> OrbitDragged;
         public event Action<float> Zoomed;
 
+        [Tooltip("Set by HUDs: presses that start over a HUD are ignored here.")]
+        public Func<Vector2, bool> PointerBlocked;
+
         public bool IsDragging { get; private set; }
         public Rect DragRect { get; private set; }
 
@@ -26,6 +29,7 @@ namespace SporeTribal.Inputs
         private bool rightHeld;
         private bool rightPanning;
         private bool chordActive;
+        private bool pressedOnUi;
 
         private void Update()
         {
@@ -36,6 +40,14 @@ namespace SporeTribal.Inputs
 
             bool left = mouse.leftButton.isPressed;
             bool right = mouse.rightButton.isPressed;
+
+            if (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame)
+                pressedOnUi = PointerBlocked != null && PointerBlocked(mouse.position.ReadValue());
+            if (pressedOnUi)
+            {
+                if (!left && !right) pressedOnUi = false;
+                return;
+            }
 
             if (chordActive)
             {
