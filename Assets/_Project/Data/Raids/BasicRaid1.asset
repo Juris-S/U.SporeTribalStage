@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf9e34e66c63171499f43905cca5274a, type: 3}
   m_Name: BasicRaid1
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Definitions.RaidDefinition
-  displayName: Early skirmish (basicraid1)
+  displayName: Early skirmish
   objective: 0
   initialDelay: 0
   checkTime: 180
