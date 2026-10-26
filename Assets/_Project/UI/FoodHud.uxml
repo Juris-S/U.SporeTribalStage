@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/_Project/UI/FoodHud.uss?fileID=7433441132597879392&amp;guid=04749c9bccf991a4ab5bd41b6c267a01&amp;type=3#FoodHud"/>
+    <ui:VisualElement name="food-hud" class="food">
+        <ui:VisualElement name="food-bar" class="food__bar">
+            <ui:Label name="food-count" text="0" class="food__count" style="color: rgb(255, 255, 255); -unity-text-outline-color: rgb(0, 0, 0);"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="food-icon" class="food__icon"/>
+    </ui:VisualElement>
+</ui:UXML>

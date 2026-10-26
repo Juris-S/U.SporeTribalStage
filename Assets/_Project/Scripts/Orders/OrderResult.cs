@@ -2,7 +2,7 @@ using SporeTribal.Villagers;
 
 namespace SporeTribal.Orders
 {
-    public enum RefusalReason { None, TargetGone }
+    public enum RefusalReason { None, TargetGone, AlreadyEquipped, CannotAfford }
 
     public readonly struct OrderResult
     {
@@ -26,6 +26,8 @@ namespace SporeTribal.Orders
         public static string Describe(this RefusalReason reason) => reason switch
         {
             RefusalReason.TargetGone => "That target is gone.",
+            RefusalReason.AlreadyEquipped => "Already carrying that tool.",
+            RefusalReason.CannotAfford => "Not enough food.",
             _ => string.Empty
         };
     }
