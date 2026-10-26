@@ -11,7 +11,8 @@ Material:
   m_Shader: {fileID: 4800000, guid: 2a4fdabedb784344d996144f45d63abd, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _LIT
   m_InvalidKeywords:
   - _SHOWDOTS_ON
   - _SHOWLINES_ON
@@ -32,21 +33,21 @@ Material:
     - _CellSize: 1
     - _DotRadius: 0.05
     - _LineWidth: 0.02
-    - _Lit: 0
+    - _Lit: 1
     - _MajorBoost: 1.8
     - _MajorEvery: 10
     - _Metallic: 0
     - _NoiseScale: 0.35
-    - _NoiseStrength: 0.6
+    - _NoiseStrength: 0.7
     - _ShowDots: 1
     - _ShowLines: 1
     - _ShowMajor: 1
     - _ShowNoise: 1
-    - _Smoothness: 0
+    - _Smoothness: 0.05
     m_Colors:
-    - _BaseColor: {r: 0.059999965, g: 0.059999965, b: 0.06999998, a: 1}
-    - _DirtColor: {r: 0.03, g: 0.025, b: 0.02, a: 1}
-    - _DotColor: {r: 0.19999996, g: 0.19999996, b: 0.22999996, a: 1}
-    - _LineColor: {r: 0.11999995, g: 0.11999995, b: 0.13999996, a: 1}
+    - _BaseColor: {r: 0.33, g: 0.58, b: 0.16, a: 1}
+    - _DirtColor: {r: 0.18, g: 0.36, b: 0.1, a: 1}
+    - _DotColor: {r: 0.24, g: 0.44, b: 0.11, a: 1}
+    - _LineColor: {r: 0.28, g: 0.5, b: 0.13, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
