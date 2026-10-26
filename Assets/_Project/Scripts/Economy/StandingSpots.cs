@@ -11,7 +11,23 @@ namespace SporeTribal.Economy
         private readonly Transform centre;
         private readonly VillagerUnit[] taken = new VillagerUnit[Count];
 
-        public StandingSpots(Transform centre) => this.centre = centre;
+        private readonly int capacity;
+
+        public StandingSpots(Transform centre, int capacity = Count)
+        {
+            this.centre = centre;
+            this.capacity = Mathf.Clamp(capacity, 1, Count);
+        }
+
+        public bool HasFree
+        {
+            get
+            {
+                int used = 0;
+                foreach (VillagerUnit v in taken) if (v != null) used++;
+                return used < capacity;
+            }
+        }
 
         public Vector3 Claim(VillagerUnit who, Vector3 from, float distance)
         {
