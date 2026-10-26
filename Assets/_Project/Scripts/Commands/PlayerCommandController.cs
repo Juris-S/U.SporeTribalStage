@@ -29,7 +29,7 @@ namespace SporeTribal.Commands
                 FoodNode node = resourceHit.collider.GetComponentInParent<FoodNode>();
                 if (node != null)
                 {
-                    foreach (VillagerUnit unit in selection.Selected) unit.Gather(node);
+                    foreach (VillagerUnit unit in selection.Selected) unit.Accept(TribalOrder.Gather(node));
                     return;
                 }
             }

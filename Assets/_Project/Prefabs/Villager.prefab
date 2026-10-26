@@ -244,7 +244,9 @@ MonoBehaviour:
   idleGlanceInterval: {x: 4, y: 10}
   idleTurnSpeed: 90
   gatherSeconds: 1.5
-  carryCapacity: 3
+  carryCapacity: 10
   arriveDistance: 2.2
   depositDistance: 3
   searchRadius: 25
+  villageRadius: 30
+  wanderInterval: {x: 5, y: 15}

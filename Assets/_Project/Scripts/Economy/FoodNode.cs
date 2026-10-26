@@ -10,25 +10,25 @@ namespace SporeTribal.Economy
         public static IReadOnlyList<FoodNode> All => all;
 
         [SerializeField] private int maxFood = 12;
-        [SerializeField] private float regrowSeconds = 20f;
+        [SerializeField] private float regrowSeconds = 25f;
         [SerializeField] private Renderer[] fruit;
         [SerializeField] private Material ringMaterial;
         [SerializeField] private float ringSize = 3f;
         [SerializeField, ColorUsage(true, true)] private Color ringColor = new Color(1f, 1f, 1f, 0.35f);
 
-        private const int SpotCount = 8;
-        private readonly VillagerUnit[] spots = new VillagerUnit[SpotCount];
         private int food;
         private float regrowAt;
         private GameObject ring;
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
 
+        public StandingSpots Spots { get; private set; }
         public int Food => food;
         public bool Available => food > 0;
 
         private void Awake()
         {
             food = maxFood;
+            Spots = new StandingSpots(transform);
             ring = GameObject.CreatePrimitive(PrimitiveType.Quad);
             Destroy(ring.GetComponent<Collider>());
             ring.name = "TargetRing";
@@ -67,29 +67,6 @@ namespace SporeTribal.Economy
                 if ((v.transform.position - transform.position).sqrMagnitude <= r * r) return true;
             }
             return false;
-        }
-
-        public Vector3 ClaimSpot(VillagerUnit who, Vector3 from, float distance)
-        {
-            ReleaseSpot(who);
-            Vector3 dir = from - transform.position;
-            float want = Mathf.Atan2(dir.z, dir.x);
-            int best = 0;
-            float bestDiff = float.MaxValue;
-            for (int i = 0; i < SpotCount; i++)
-            {
-                float diff = Mathf.Abs(Mathf.DeltaAngle(want * Mathf.Rad2Deg, i * 360f / SpotCount));
-                if (spots[i] != null) diff += 360f;
-                if (diff < bestDiff) { bestDiff = diff; best = i; }
-            }
-            spots[best] = who;
-            float a = best * Mathf.PI * 2f / SpotCount;
-            return transform.position + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * distance;
-        }
-
-        public void ReleaseSpot(VillagerUnit who)
-        {
-            for (int i = 0; i < SpotCount; i++) if (spots[i] == who) spots[i] = null;
         }
 
         public int Take(int amount)

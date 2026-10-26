@@ -76,7 +76,10 @@ namespace SporeTribal.Debugging
             foreach (VillagerUnit unit in units)
             {
                 Color colour = ColourFor(unit);
-                labels.Add(new Label { World = unit.transform.position + Vector3.up * 2.4f, Text = unit.Intent, Colour = colour, Small = true });
+                labels.Add(new Label { World = unit.transform.position + Vector3.up * 3.0f, Text = $"Order: {unit.OrderLabel}", Colour = colour, Small = true });
+                labels.Add(new Label { World = unit.transform.position + Vector3.up * 2.5f, Text = unit.BehaviourLabel, Colour = Color.Lerp(colour, Color.white, 0.5f), Small = true });
+                if (unit.InterruptLabel != null)
+                    labels.Add(new Label { World = unit.transform.position + Vector3.up * 3.5f, Text = unit.InterruptLabel, Colour = new Color(1f, 0.35f, 0.3f), Small = true });
 
                 if (unit.IsMoving && BuildRemainingPath(unit))
                     ShowPath(GetLine(pathLines, ref paths, false), colour);
