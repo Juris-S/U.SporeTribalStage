@@ -10,7 +10,7 @@ namespace SporeTribal.Debugging
     public class NavMeshDebugView : MonoBehaviour
     {
         [SerializeField] private SelectionController selection;
-        [SerializeField] private MoveOrderDispatcher dispatcher;
+        [SerializeField] private OrderDispatcher dispatcher;
         [SerializeField] private Material lineMaterial;
         [SerializeField] private Key toggleKey = Key.N;
         [SerializeField] private Key allKey = Key.M;

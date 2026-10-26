@@ -1,9 +1,9 @@
 using SporeTribal.Economy;
 using SporeTribal.Feedback;
 using SporeTribal.Inputs;
+using SporeTribal.Orders;
 using SporeTribal.Selection;
 using SporeTribal.Utilities;
-using SporeTribal.Villagers;
 using UnityEngine;
 
 namespace SporeTribal.Commands
@@ -12,7 +12,7 @@ namespace SporeTribal.Commands
     {
         [SerializeField] private RTSInputController input;
         [SerializeField] private SelectionController selection;
-        [SerializeField] private MoveOrderDispatcher dispatcher;
+        [SerializeField] private OrderDispatcher dispatcher;
         [SerializeField] private ClickPing clickPing;
         [SerializeField] private LayerMask groundMask = ~0;
         [SerializeField] private LayerMask resourceMask;
@@ -24,20 +24,21 @@ namespace SporeTribal.Commands
         {
             if (selection.Selected.Count == 0) return;
 
-            if (ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit))
+            ClickTarget target;
+            if (ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit)
+                && resourceHit.collider.GetComponentInParent<FoodNode>() is FoodNode node)
             {
-                FoodNode node = resourceHit.collider.GetComponentInParent<FoodNode>();
-                if (node != null)
-                {
-                    foreach (VillagerUnit unit in selection.Selected) unit.Accept(TribalOrder.Gather(node));
-                    return;
-                }
+                target = ClickTarget.Resource(node, resourceHit.point);
             }
+            else if (ScreenRaycast.TryRaycast(screenPosition, groundMask, out RaycastHit hit))
+            {
+                target = ClickTarget.Ground(hit.point);
+                if (clickPing != null) clickPing.Play(hit.point);
+            }
+            else return;
 
-            if (!ScreenRaycast.TryRaycast(screenPosition, groundMask, out RaycastHit hit)) return;
-
-            dispatcher.MoveTo(selection.Selected, hit.point);
-            if (clickPing != null) clickPing.Play(hit.point);
+            OrderBatch batch = dispatcher.Issue(selection.Selected, target);
+            if (batch.AllRefusedReason() is RefusalReason reason) Debug.Log($"[Order] All refused: {reason.Describe()}");
         }
     }
 }

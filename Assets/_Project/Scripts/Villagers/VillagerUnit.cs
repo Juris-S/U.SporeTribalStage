@@ -33,6 +33,7 @@ namespace SporeTribal.Villagers
         private string gatherStage;
         private Coroutine gatherRoutine;
         private StandingSpots spots;
+        private FoodNode workNode;
         private Vector3? wanderCentre;
         private float nextWanderTime;
         private TribalOrder? order;
@@ -96,6 +97,7 @@ namespace SporeTribal.Villagers
         public bool IsSelected { get; private set; }
         public bool IsGathering => gatherStage != null;
         public float SearchRadius => searchRadius;
+        public FoodNode GatherTarget => workNode;
 
         public void SetSelected(bool selected)
         {
@@ -129,6 +131,7 @@ namespace SporeTribal.Villagers
                     agent.SetDestination(order.Point);
                     break;
                 case OrderKind.Gather:
+                    workNode = order.Node;
                     gatherRoutine = StartCoroutine(GatherRoutine(order.Node));
                     break;
             }
@@ -141,6 +144,7 @@ namespace SporeTribal.Villagers
             gatherStage = null;
             carried = 0;
             order = null;
+            workNode = null;
             wanderCentre = null;
             ReleaseSpot();
         }
@@ -152,9 +156,10 @@ namespace SporeTribal.Villagers
             {
                 if (!node.Available)
                 {
-                    FoodNode next = FoodNode.Nearest(transform.position, searchRadius);
+                    FoodNode next = FoodNode.Nearest(node.transform.position, searchRadius);
                     if (next == null) break;
                     node = next;
+                    workNode = node;
                 }
 
                 gatherStage = "to food";
@@ -185,6 +190,7 @@ namespace SporeTribal.Villagers
             yield return WalkTo(spots.Claim(this, transform.position, depositDistance));
             ReleaseSpot();
             order = null;
+            workNode = null;
             gatherRoutine = null;
             gatherStage = null;
             wanderCentre = home.transform.position;
