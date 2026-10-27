@@ -7,6 +7,11 @@ Shader "Project/BentLit"
         _Smoothness ("Smoothness", Range(0, 1)) = 0.5
         _Metallic ("Metallic", Range(0, 1)) = 0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
+
+        [Header(Wind)]
+        [Toggle(_WIND)] _Wind ("Wind Sway", Float) = 0
+        _WindFlex ("Flex (bend per m squared)", Range(0, 0.1)) = 0.012
+        _WindFlutter ("Leaf Flutter (m)", Range(0, 0.1)) = 0.02
     }
 
     SubShader
@@ -21,6 +26,8 @@ Shader "Project/BentLit"
             half4 _BaseColor;
             half _Smoothness;
             half _Metallic;
+            float _WindFlex;
+            float _WindFlutter;
         CBUFFER_END
         ENDHLSL
 
@@ -39,8 +46,11 @@ Shader "Project/BentLit"
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile_fragment _ _LIGHT_COOKIES
+            #pragma shader_feature_local_vertex _WIND
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "WorldBend.hlsl"
+            #include "Wind.hlsl"
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
@@ -63,7 +73,11 @@ Shader "Project/BentLit"
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
-                OUT.positionWS = WorldBend(TransformObjectToWorld(IN.positionOS.xyz));
+                float3 positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+            #ifdef _WIND
+                positionWS = ApplyFoliageWind(positionWS);
+            #endif
+                OUT.positionWS = WorldBend(positionWS);
                 OUT.positionCS = TransformWorldToHClip(OUT.positionWS);
                 OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
                 OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);
@@ -109,6 +123,7 @@ Shader "Project/BentLit"
             #pragma vertex ShadowVert
             #pragma fragment ShadowFrag
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+            #pragma shader_feature_local_vertex _WIND
             #include "WorldBendPasses.hlsl"
             ENDHLSL
         }
@@ -125,6 +140,7 @@ Shader "Project/BentLit"
             #pragma target 3.5
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
+            #pragma shader_feature_local_vertex _WIND
             #include "WorldBendPasses.hlsl"
             ENDHLSL
         }
@@ -140,6 +156,7 @@ Shader "Project/BentLit"
             #pragma target 3.5
             #pragma vertex DepthVert
             #pragma fragment DepthNormalsFrag
+            #pragma shader_feature_local_vertex _WIND
             #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
             #include "WorldBendPasses.hlsl"
             ENDHLSL
