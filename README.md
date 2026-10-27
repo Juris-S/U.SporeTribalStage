@@ -97,3 +97,9 @@ Unity 6, Universal Render Pipeline, Input System, Cinemachine, NavMesh, PrimeTwe
 - Tweening: [PrimeTween](https://github.com/KyryloKuzyk/PrimeTween).
 - Character models: Creative Characters FREE by ithappy.
 - Humanoid animations: Human Animations (FREE version) by Kevin Iglesias.
+
+## License
+
+The code and original content in this repository are released under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). You may read, learn from, modify and share it for any noncommercial purpose, as long as you keep the `Required Notice` line in the license file. Commercial use, including reselling it, is not permitted.
+
+The license covers only the work in this repository by its author. Third-party assets listed under Credits keep their own licenses and terms.
