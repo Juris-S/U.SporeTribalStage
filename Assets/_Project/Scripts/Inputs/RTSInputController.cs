@@ -33,6 +33,7 @@ namespace SporeTribal.Inputs
         private bool rightPanning;
         private bool chordActive;
         private bool pressedOnUi;
+        private bool middleHeld;
 
         private void Update()
         {
@@ -75,6 +76,8 @@ namespace SporeTribal.Inputs
             float scroll = mouse.scroll.ReadValue().y;
             if (scroll != 0f) Zoomed?.Invoke(Mathf.Sign(scroll));
 
+            ReadMiddleDrag(mouse);
+
             var keyboard = Keyboard.current;
             if (keyboard == null || !KeyPanEnabled) return;
 
@@ -82,6 +85,19 @@ namespace SporeTribal.Inputs
                 (keyboard.rightArrowKey.isPressed ? 1f : 0f) - (keyboard.leftArrowKey.isPressed ? 1f : 0f),
                 (keyboard.upArrowKey.isPressed ? 1f : 0f) - (keyboard.downArrowKey.isPressed ? 1f : 0f));
             if (dir != Vector2.zero) PanKeyed?.Invoke(dir.normalized);
+        }
+
+        private void ReadMiddleDrag(Mouse mouse)
+        {
+            if (mouse.middleButton.wasPressedThisFrame)
+                middleHeld = PointerBlocked == null || !PointerBlocked(mouse.position.ReadValue());
+            if (!mouse.middleButton.isPressed) middleHeld = false;
+            if (!middleHeld) return;
+
+            Vector2 delta = mouse.delta.ReadValue();
+            bool orbit = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+            if (orbit) OrbitDragged?.Invoke(delta);
+            else PanDragged?.Invoke(delta);
         }
 
         private void UpdateLeft(Mouse mouse, Vector2 position)

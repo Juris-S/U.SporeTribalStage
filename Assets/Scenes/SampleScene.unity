@@ -150,7 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Villagers.VillagerSpawner
   prefab: {fileID: 4316238543952936551, guid: 2d91e97b38256714bacf762199e357ef, type: 3}
   village: {fileID: 429429937}
-  regulars: 2
+  regulars: 5
   spacing: 3
 --- !u!4 &40150531
 Transform:
@@ -781,6 +781,7 @@ GameObject:
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
   - component: {fileID: 330585549}
+  - component: {fileID: 330585550}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -919,13 +920,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.CameraControl.RTSCameraController
   input: {fileID: 1808637038}
-  keyPanSpeed: 0.8
+  fieldOfView: 60
+  nearClip: 0.1
+  farClip: 1000
+  minDistance: 5
+  maxDistance: 70
+  zoomStep: 0.5
+  pitchRange: {x: 20, y: 80}
+  basePanSpeed: 15
+  referenceDistance: 15
   dragPanSpeed: 0.0025
   orbitSpeed: 0.25
-  zoomStep: 2
-  distanceRange: {x: 5, y: 40}
-  pitchRange: {x: 20, y: 80}
-  smoothing: 12
+  edgeScroll: 1
+  edgeMarginPixels: 16
+  panAccelTime: 0.1
+  velocityDecayTime: 0.2
+  anchorSmoothTime: 0.05
+  zoomSmoothTime: 0.08
+  azimuthSmoothTime: 0.05
 --- !u!114 &330585549
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -944,6 +956,25 @@ MonoBehaviour:
   startSpeed: 8
   maxSpeed: 60
   speedRamp: 20
+--- !u!114 &330585550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f880df17e482344f876b13c4565a2ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Rendering.WorldBendController
+  bendEnabled: 1
+  bendInEditMode: 0
+  bendInSceneView: 0
+  planetRadius: 500
+  groundHeight: 0
+  cullingExtent: 150
+  toggleKey: 16
 --- !u!1001 &344177508
 PrefabInstance:
   m_ObjectHideFlags: 0
