@@ -45,13 +45,19 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _CrackStrength: 0
-    - _DetailStrength: 1
+    - _CrackStrength: 0.151
+    - _DetailStrength: 1.101
     - _DetailTile: 5
-    - _EdgeWarp: 1.4
+    - _EdgeWarp: 1.95
     - _MeadowScale: 0.2
-    - _RockAmount: 0.75
-    - _RockDetailStrength: 2.5
+    - _RockAmount: 0.584
+    - _RockBreakup: 0.307
+    - _RockBreakupScale: 0.238
+    - _RockDetailStrength: 0.62
+    - _RockInnerClear: 0.097
+    - _SandOverAmount: 0.5
+    - _SandOverScale: 0.45
+    - _SandOverSoftness: 0.2
     - _Smoothness: 0.05
     m_Colors:
     - _CrackColor: {r: 0.19999996, g: 0.16999996, b: 0.15999997, a: 1}
@@ -59,9 +65,9 @@ Material:
     - _GrassDark: {r: 0.21999997, g: 0.5, b: 0.089999996, a: 1}
     - _GrassLight: {r: 0.4699999, g: 0.74, b: 0.15999997, a: 1}
     - _MaskRect: {r: -75, g: -75, b: 150, a: 0}
-    - _RockColor: {r: 0.35999998, g: 0.34999996, b: 0.36999997, a: 1}
+    - _RockColor: {r: 0.5471698, g: 0.5136169, b: 0.5136169, a: 1}
     - _RockRim: {r: 0.6, g: 0.56, b: 0.52, a: 1}
-    - _SandColor: {r: 0.82, g: 0.71, b: 0.6, a: 1}
+    - _SandColor: {r: 0.68235296, g: 0.6156863, b: 0.54901963, a: 1}
     - _UnderGrass: {r: 0.12999997, g: 0.35999998, b: 0.059999965, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

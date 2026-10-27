@@ -27,10 +27,6 @@ namespace SporeTribal.EditorTools
         private const int MaskRes = 512;
         private const float MaskSize = 150f;
         private const float MaskOrigin = -75f;
-        private const float VillageCore = 4f;
-        private const float VillageEdge = 8f;
-        private const float PathCore = 0.9f;
-        private const float PathEdge = 1.9f;
 
         private const float BuildingClearance = 7f;
         private const float VillageClearance = 9f;
@@ -47,7 +43,7 @@ namespace SporeTribal.EditorTools
         private static readonly string[] Trees = { "Tree_1_A", "Tree_1_B", "Tree_1_C", "Tree_2_A", "Tree_2_B", "Tree_2_C", "Tree_3_A", "Tree_3_B", "Tree_3_C" };
         private static readonly string[] BareTrees = { "Tree_Bare_1_A", "Tree_Bare_1_B", "Tree_Bare_2_A" };
         private static readonly string[] Rocks = { "Rock_1_A", "Rock_1_B", "Rock_1_C", "Rock_2_A", "Rock_2_B", "Rock_3_A", "Rock_3_B", "Rock_3_C" };
-        private static readonly string[] Bushes = { "Bush_3_A", "Bush_3_B", "Bush_4_A", "Bush_4_B", "Bush_4_D" };
+        private static readonly string[] Bushes = { "Bush_3_A", "Bush_3_B" };
         private static readonly string[] Grass = { "Grass_1_A_Singlesided", "Grass_1_B_Singlesided", "Grass_2_A_Singlesided", "Grass_2_B_Singlesided", "Grass_1_A", "Grass_2_A", "Grass_1_B" };
 
         [MenuItem("Tools/Spore/Scatter Nature")]
@@ -58,14 +54,16 @@ namespace SporeTribal.EditorTools
 
             var root = new GameObject(RootName);
             Undo.RegisterCreatedObjectUndo(root, "Scatter Nature");
-            var keepouts = CollectKeepouts(out var villageCenters, out var clusters);
+            var keepouts = CollectKeepouts(out var villageCenters);
             var rng = new Random(Seed);
-            var mask = BakeGroundMask(clusters, villageCenters, keepouts);
+            var mask = BakeGroundMask(villageCenters, keepouts);
             var groundRenderer = GameObject.Find("Ground")?.GetComponent<MeshRenderer>();
             if (groundRenderer != null)
             {
                 Undo.RecordObject(groundRenderer, "Scatter Nature");
                 groundRenderer.sharedMaterial = AssetDatabase.LoadAssetAtPath<Material>(GroundMaterialPath);
+                if (groundRenderer.GetComponent<GroundFootprintPainter>() == null)
+                    Undo.AddComponent<GroundFootprintPainter>(groundRenderer.gameObject);
             }
 
             var forest = NewGroup(root, "Forest");
@@ -200,7 +198,7 @@ namespace SporeTribal.EditorTools
 
         private static float GrassDensity(Vector2 p, GroundMask mask, List<Keepout> keepouts)
         {
-            if (mask.Sample(mask.Village, p) > 0.05f || mask.Sample(mask.Trail, p) > 0.15f) return 0f;
+            if (GroundFootprint.ClearingAtPoint(p) > 0.05f || mask.Sample(mask.Trail, p) > 0.15f) return 0f;
             if (IsBlocked(p, keepouts, GrassClearanceTrim)) return 0f;
 
             float clumps = Mathf.PerlinNoise(p.x * 0.24f + 100f, p.y * 0.24f + 100f);
@@ -212,9 +210,7 @@ namespace SporeTribal.EditorTools
 
         private sealed class GroundMask
         {
-            public readonly float[] Village = new float[MaskRes * MaskRes];
             public readonly float[] Trail = new float[MaskRes * MaskRes];
-            public readonly float[] Paths = new float[MaskRes * MaskRes];
             public readonly float[] Cover = new float[MaskRes * MaskRes];
 
             public float Sample(float[] channel, Vector2 p)
@@ -225,34 +221,9 @@ namespace SporeTribal.EditorTools
             }
         }
 
-        private static GroundMask BakeGroundMask(List<List<Vector2>> clusters, List<Vector2> centers, List<Keepout> keepouts)
+        private static GroundMask BakeGroundMask(List<Vector2> centers, List<Keepout> keepouts)
         {
             var mask = new GroundMask();
-
-            foreach (var nodes in clusters)
-            {
-                if (nodes.Count == 0) continue;
-
-                foreach (var node in nodes)
-                    StampSegment(mask.Village, node, node, VillageCore, VillageEdge, 1f);
-
-                var linked = new List<Vector2> { nodes[0] };
-                var rest = new List<Vector2>(nodes);
-                rest.RemoveAt(0);
-                while (rest.Count > 0)
-                {
-                    float best = float.MaxValue;
-                    Vector2 from = default, to = default;
-                    foreach (var a in linked)
-                        foreach (var b in rest)
-                            if ((a - b).sqrMagnitude < best) { best = (a - b).sqrMagnitude; from = a; to = b; }
-
-                    StampWobblySegment(mask.Paths, from, to, PathCore, PathEdge, 1f, 0.5f);
-                    StampSegment(mask.Village, from, to, VillageCore, VillageEdge, 1f);
-                    linked.Add(to);
-                    rest.Remove(to);
-                }
-            }
 
             if (centers.Count == 2)
             {
@@ -309,13 +280,6 @@ namespace SporeTribal.EditorTools
             return Vector2.Lerp(a, b, t) + side * offset * Mathf.Sin(t * Mathf.PI);
         }
 
-        private static void StampWobblySegment(float[] channel, Vector2 a, Vector2 b, float core, float edge, float strength, float amount)
-        {
-            int steps = Mathf.Max(2, Mathf.CeilToInt(Vector2.Distance(a, b) / 3f));
-            for (int i = 0; i < steps; i++)
-                StampSegment(channel, WobblePoint(a, b, i / (float)steps, amount), WobblePoint(a, b, (i + 1) / (float)steps, amount), core, edge, strength);
-        }
-
         private static void StampSegment(float[] channel, Vector2 a, Vector2 b, float core, float edge, float strength)
         {
             float texel = MaskSize / MaskRes;
@@ -342,7 +306,7 @@ namespace SporeTribal.EditorTools
         {
             var pixels = new Color32[MaskRes * MaskRes];
             for (int i = 0; i < pixels.Length; i++)
-                pixels[i] = new Color32((byte)(mask.Village[i] * 255f), (byte)(mask.Trail[i] * 255f), (byte)(mask.Paths[i] * 255f), (byte)(mask.Cover[i] * 255f));
+                pixels[i] = new Color32(0, (byte)(mask.Trail[i] * 255f), 0, (byte)(mask.Cover[i] * 255f));
 
             var tex = new Texture2D(MaskRes, MaskRes, TextureFormat.RGBA32, false, true);
             tex.SetPixels32(pixels);
@@ -383,37 +347,24 @@ namespace SporeTribal.EditorTools
             return mat;
         }
 
-        private static List<Keepout> CollectKeepouts(out List<Vector2> villageCenters, out List<List<Vector2>> clusters)
+        private static List<Keepout> CollectKeepouts(out List<Vector2> villageCenters)
         {
             var list = new List<Keepout>();
             villageCenters = new List<Vector2>();
-            clusters = new List<List<Vector2>>();
 
             foreach (var rootName in new[] { "Village Buildings", "Enemy Village" })
             {
                 var root = GameObject.Find(rootName);
-                var cluster = new List<Vector2>();
-                clusters.Add(cluster);
                 if (root == null) continue;
                 foreach (Transform child in root.transform)
-                {
                     list.Add(new Keepout { Center = Flat(child.position), Radius = BuildingClearance });
-                    cluster.Add(Flat(child.position));
-                }
             }
 
             foreach (var village in Object.FindObjectsByType<Village>())
-            {
-                var c = Flat(village.transform.position);
-                list.Add(new Keepout { Center = c, Radius = VillageClearance });
+                list.Add(new Keepout { Center = Flat(village.transform.position), Radius = VillageClearance });
 
-                List<Vector2> nearest = null;
-                float best = float.MaxValue;
-                foreach (var cluster in clusters)
-                    foreach (var node in cluster)
-                        if ((node - c).sqrMagnitude < best) { best = (node - c).sqrMagnitude; nearest = cluster; }
-                nearest?.Add(c);
-            }
+            foreach (var footprint in GroundFootprint.All)
+                list.Add(new Keepout { Center = footprint.Position, Radius = footprint.Reach });
 
             foreach (var food in Object.FindObjectsByType<FoodNode>())
                 list.Add(new Keepout { Center = Flat(food.transform.position), Radius = FoodClearance });

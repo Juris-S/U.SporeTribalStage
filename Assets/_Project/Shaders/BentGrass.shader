@@ -59,6 +59,10 @@ Shader "Project/BentGrass"
             float _GrassPusherCount;
             float _GrassFade;
 
+            TEXTURE2D(_GroundFootprints);
+            SAMPLER(sampler_GroundFootprints);
+            float4 _GroundFootprintRect;
+
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
 
@@ -87,7 +91,10 @@ Shader "Project/BentGrass"
                 float stiff = h * h;
                 OUT.height = h;
 
-                pos.y = pos.y * (1.0 - _GrassFade) - _GrassFade * 0.15;
+                float2 footUV = (pos.xz - _GroundFootprintRect.xy) / max(_GroundFootprintRect.z, 0.001);
+                float worn = smoothstep(0.05, 0.4, SAMPLE_TEXTURE2D_LOD(_GroundFootprints, sampler_GroundFootprints, footUV, 0).r);
+                float sink = max(_GrassFade, worn);
+                pos.y = pos.y * (1.0 - sink) - sink * 0.15;
 
                 pos += WindOffset(pos, _WindStrength * stiff);
                 pos.xz += sin(_Time.y * 4.0 + pos.x * 2.1 + pos.z * 1.7) * 0.02 * stiff * _GlobalWindStrength;

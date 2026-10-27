@@ -9,16 +9,21 @@ Shader "Project/Terrain"
         _MeadowScale ("Meadow Gradient Scale", Range(0.005, 0.2)) = 0.035
 
         [Header(Village Ground)]
-        [NoScaleOffset] _MaskMap ("Mask (R village, G trail, B paths, A grass cover)", 2D) = "black" {}
+        [NoScaleOffset] _MaskMap ("Baked Mask (G trail, A grass cover)", 2D) = "black" {}
         _MaskRect ("Mask Rect (origin x, origin z, size)", Vector) = (-75, -75, 150, 0)
         _SandColor ("Packed Sand", Color) = (0.82, 0.71, 0.6, 1)
         _DustColor ("Dusty Edge", Color) = (0.62, 0.62, 0.36, 1)
         _RockColor ("Rock", Color) = (0.36, 0.35, 0.37, 1)
-        _RockRim ("Rock Rim", Color) = (0.6, 0.56, 0.52, 1)
         _CrackColor ("Cracks", Color) = (0.2, 0.17, 0.16, 1)
         _CrackStrength ("Crack Strength", Range(0, 1)) = 0
         _EdgeWarp ("Edge Warp (m)", Range(0, 4)) = 1.4
         _RockAmount ("Rock Amount", Range(0, 1)) = 0.75
+        _RockInnerClear ("Rock Inner Clearing", Range(0, 1)) = 0.4
+        _RockBreakup ("Rock Ring Breakup", Range(0, 1)) = 0.6
+        _RockBreakupScale ("Rock Ring Breakup Scale", Range(0.03, 1)) = 0.12
+        _SandOverAmount ("Sand Over Stone Amount", Range(0, 1)) = 0.5
+        _SandOverScale ("Sand Over Stone Scale", Range(0.05, 3)) = 0.45
+        _SandOverSoftness ("Sand Over Stone Softness", Range(0.02, 0.5)) = 0.2
 
         [Header(Detail)]
         [NoScaleOffset] _DetailGrass ("Grass Detail", 2D) = "grey" {}
@@ -64,11 +69,16 @@ Shader "Project/Terrain"
                 half4 _SandColor;
                 half4 _DustColor;
                 half4 _RockColor;
-                half4 _RockRim;
                 half4 _CrackColor;
                 float _CrackStrength;
                 float _EdgeWarp;
                 float _RockAmount;
+                float _RockInnerClear;
+                float _RockBreakup;
+                float _RockBreakupScale;
+                float _SandOverAmount;
+                float _SandOverScale;
+                float _SandOverSoftness;
                 float _DetailTile;
                 float _DetailStrength;
                 float _RockDetailStrength;
@@ -82,6 +92,10 @@ Shader "Project/Terrain"
             TEXTURE2D(_DetailSand);
             TEXTURE2D(_DetailRock);
             SAMPLER(sampler_DetailGrass);
+
+            TEXTURE2D(_GroundFootprints);
+            SAMPLER(sampler_GroundFootprints);
+            float4 _GroundFootprintRect;
 
             half Detail(TEXTURE2D_PARAM(tex, smp), float2 uv, float strength)
             {
@@ -193,10 +207,13 @@ Shader "Project/Terrain"
                 float2 warp = float2(Fbm(xz * 0.22), Fbm(xz * 0.22 + 9.1)) - 0.5;
                 float2 uv = (xz + warp * _EdgeWarp - _MaskRect.xy) / _MaskRect.z;
                 half4 m = SAMPLE_TEXTURE2D(_MaskMap, sampler_MaskMap, uv);
-                float village = m.r;
                 float trail = m.g;
-                float paths = m.b;
                 float cover = m.a;
+
+                float2 footUV = (xz + warp * _EdgeWarp - _GroundFootprintRect.xy) / max(_GroundFootprintRect.z, 0.001);
+                half4 foot = SAMPLE_TEXTURE2D(_GroundFootprints, sampler_GroundFootprints, footUV);
+                float village = foot.r;
+                float stonePatch = foot.g;
 
                 float meadow = smoothstep(0.3, 0.7, Fbm(xz * _MeadowScale + 50.0));
                 half3 col = lerp(_GrassDark.rgb, _GrassLight.rgb, meadow);
@@ -218,26 +235,36 @@ Shader "Project/Terrain"
                 {
                     float fine = Fbm(xz * 2.1);
                     half3 sand = _SandColor.rgb * lerp(0.9, 1.05, fine) * Detail(TEXTURE2D_ARGS(_DetailSand, sampler_DetailGrass), detailUV, _DetailStrength);
-                    sand *= lerp(1.0, 1.06, smoothstep(0.3, 0.8, paths));
                     sand = lerp(sand, _CrackColor.rgb, Cracks(xz * 0.9, 0.025) * 0.28 * _CrackStrength * smoothstep(0.55, 0.9, village));
 
-                    float rockField = Fbm(xz * 0.16 + 31.0) + (fine - 0.5) * 0.08
-                                    - smoothstep(0.15, 0.6, paths) * 0.45
+                    float rockField = stonePatch + (Fbm(xz * 0.3 + 31.0) - 0.5) * 0.5
                                     - (1 - smoothstep(0.55, 0.85, village)) * 0.3;
-                    float threshold = lerp(0.62, 0.38, _RockAmount);
-                    float rough = rockField + (Fbm(xz * 1.6 + 13.0) - 0.5) * 0.06;
-                    float rock = smoothstep(threshold - 0.03, threshold + 0.03, rough);
-                    float inner = smoothstep(threshold, threshold + 0.08, rough);
-                    float rim = smoothstep(threshold - 0.06, threshold - 0.015, rough) * (1 - rock);
-                    float halo = smoothstep(threshold - 0.1, threshold, rough) * (1 - rock);
+                    float clearEdge = smoothstep(0.45, 0.95, village + (Fbm(xz * 0.35 + 63.0) - 0.5) * 0.35);
+                    rockField -= clearEdge * _RockInnerClear * 1.5;
 
-                    half3 stone = _RockColor.rgb * lerp(0.82, 1.1, Fbm(xz * 0.8 + 7.0)) * Detail(TEXTURE2D_ARGS(_DetailRock, sampler_DetailGrass), detailUV, _RockDetailStrength);
+                    float2 bp = xz * _RockBreakupScale + (warp * 3.0);
+                    float breakNoise = Fbm(bp + 41.0);
+                    float gate = smoothstep(0.3, 0.6, breakNoise);
+                    rockField = lerp(rockField, rockField * gate, _RockBreakup)
+                              + (breakNoise - 0.5) * _RockBreakup * 0.6;
+                    float threshold = lerp(0.8, 0.35, _RockAmount);
+                    float speck = (Fbm(xz * 1.6 + 13.0) - 0.5) * 0.35 + (fine - 0.5) * 0.2;
+                    float rock = smoothstep(threshold - 0.18, threshold + 0.12, rockField + speck);
+                    float inner = smoothstep(threshold, threshold + 0.3, rockField);
+
+                    half rd = Detail(TEXTURE2D_ARGS(_DetailRock, sampler_DetailGrass), detailUV, _RockDetailStrength) - 1.0;
+                    rd = 1.0 + rd * rsqrt(1.0 + rd * rd * 9.0);
+                    half3 stone = _RockColor.rgb * lerp(0.88, 1.08, Fbm(xz * 0.8 + 7.0)) * rd;
                     stone = lerp(stone, _CrackColor.rgb * 0.6, Cracks(xz * 0.55 + 4.0, 0.03) * 0.55 * _CrackStrength * inner);
-                    stone = lerp(lerp(stone, _RockRim.rgb, 0.35), stone * 0.85, inner);
+                    stone = lerp(lerp(stone, sand, 0.3), stone * 0.92, inner);
 
-                    sand *= lerp(1.0, 0.88, halo);
-                    sand = lerp(sand, _RockRim.rgb, rim * 0.35);
+                    float overNoise = Fbm(xz * _SandOverScale + 77.0) * 0.75 + Fbm(xz * _SandOverScale * 3.1 + 5.0) * 0.25;
+                    float overThreshold = lerp(1.0, 0.25, _SandOverAmount);
+                    float over = smoothstep(overThreshold - _SandOverSoftness, overThreshold + _SandOverSoftness,
+                                            overNoise + (1 - inner) * 0.25);
+
                     half3 ground = lerp(sand, stone, rock);
+                    ground = lerp(ground, sand, over * rock);
                     col = lerp(col, ground, sandMask);
                 }
 
