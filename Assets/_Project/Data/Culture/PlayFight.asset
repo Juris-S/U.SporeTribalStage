@@ -48,6 +48,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   groupSize: {x: 2, y: 6}
   duration: {x: 8, y: 14}
+  includeChieftain: 0
   partnerGap: 1.3
   pairSpacing: 4
   beatSeconds: 0.9
@@ -56,3 +57,5 @@ MonoBehaviour:
   lungeTilt: 8
   staggerTilt: -20
   impactDelay: 0.12
+  fightEffect: 3
+  effectHeight: 1

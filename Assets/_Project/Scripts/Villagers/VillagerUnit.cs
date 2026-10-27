@@ -603,9 +603,9 @@ namespace SporeTribal.Villagers
             if (CanAnimate) feedback.Shove(direction, distance, seconds, tilt);
         }
 
-        public void Circle(Vector3 centre, float degrees, float seconds, float pulse, float beats)
+        public void Circle(Vector3 centre, float seconds, float pulse, float beats)
         {
-            if (CanAnimate) feedback.Circle(centre, degrees, seconds, pulse, beats);
+            if (CanAnimate) feedback.Circle(centre, seconds, pulse, beats);
         }
 
         public void Happy()
