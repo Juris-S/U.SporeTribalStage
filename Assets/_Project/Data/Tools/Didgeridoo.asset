@@ -15,10 +15,10 @@ MonoBehaviour:
   displayName: Didgeridoo
   cost: 15
   heldModel: {fileID: 919132149155446097, guid: 92792b70d62c4c34b36c5f9150487521, type: 3}
-  heldPosition: {x: 0.55, y: 0, z: 0.1}
+  heldPosition: {x: 0, y: 0, z: 0}
   heldEuler: {x: 0, y: 90, z: 0}
-  heldForwardTilt: 15
-  heldScale: 1
+  heldForwardTilt: 0
+  heldScale: 0.6
   damage: 0
   razeDamage: 0
   attackCooldown: 2

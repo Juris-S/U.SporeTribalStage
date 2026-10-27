@@ -6,14 +6,6 @@ namespace SporeTribal.Feedback
 {
     public sealed class VillagerFeedback
     {
-        private struct BounceArgs
-        {
-            public float Height;
-            public bool PlayTool;
-            public int Hops;
-            public float Waves;
-        }
-
         private struct DanceArgs
         {
             public int Style;
@@ -56,19 +48,6 @@ namespace SporeTribal.Feedback
         public void Excited() => TweenFx.Excited(transform, restScale);
         public void Fighting() => TweenFx.Fighting(transform, restScale);
         public bool IsBusy => loop.isAlive;
-
-        public void Bounce(float seconds, float height, bool playTool)
-        {
-            Stop();
-            setTilt(0f);
-            int hops = Mathf.Max(3, Mathf.RoundToInt(seconds / 0.5f));
-            loop = Tween.Custom(this, new BounceArgs { Height = height, PlayTool = playTool, Hops = hops, Waves = hops * 8f / 3f },
-                new TweenSettings<float>(0f, 1f, seconds, Ease.Linear), static (fx, args, n) =>
-                {
-                    fx.agent.baseOffset = fx.baseOffset + Mathf.Abs(Mathf.Sin(n * Mathf.PI * args.Hops)) * args.Height;
-                    if (args.PlayTool) fx.poseTool(Mathf.Sin(n * Mathf.PI * args.Waves) * 18f);
-                }).OnComplete(this, static fx => fx.Rest());
-        }
 
         public void Dance(float seconds, bool liked)
         {
