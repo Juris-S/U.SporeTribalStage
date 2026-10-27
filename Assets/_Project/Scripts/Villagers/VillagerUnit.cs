@@ -36,18 +36,40 @@ namespace SporeTribal.Villagers
         [SerializeField] private ToolDefinition chieftainStaff;
         [Tooltip("Raised in place of the staff while the chieftain conducts a performance.")]
         [SerializeField] private ToolDefinition conductorBaton;
-        [Tooltip("Unscaled anchor under the body where the equipped tool is held.")]
-        [SerializeField] private Transform hand;
+        [Tooltip("Humanoid model spawned under the visual rig. Its right hand holds the equipped tool.")]
+        [SerializeField] private VillagerModel modelPrefab;
+        [Tooltip("Skin tones from light to dark. Each tribe draws a random point along the range (kept apart from other tribes), each villager varies slightly around it.")]
+        [SerializeField] private Color[] skinTones =
+        {
+            new Color(0.99f, 0.88f, 0.80f), new Color(0.96f, 0.80f, 0.69f), new Color(0.87f, 0.68f, 0.52f),
+            new Color(0.73f, 0.53f, 0.37f), new Color(0.55f, 0.37f, 0.25f), new Color(0.36f, 0.23f, 0.15f)
+        };
+        [Tooltip("Per-villager brightness variation around the tribe's skin tone (fraction).")]
+        [SerializeField, Range(0f, 0.2f)] private float skinVariance = 0.05f;
+        [Tooltip("Offset of the chieftain headgear from the head bone, in world-sized units.")]
+        [SerializeField] private Vector3 headgearOffset = new Vector3(0f, -0.02f, 0f);
+        [SerializeField] private float headgearScale = 0.3f;
+        [Tooltip("Local position and Euler rotation of the tool socket on the right hand bone.")]
+        [SerializeField] private Vector3 socketPosition;
+        [SerializeField] private Vector3 socketEuler;
         [Tooltip("Each villager rolls its speed and turn speed within +/- this fraction, once, so a group never moves in lockstep.")]
         [SerializeField, Range(0f, 0.2f)] private float movementVariance = 0.05f;
+        [Tooltip("Pace multiplier while carrying out an order or charging at an enemy. Idle wandering and watching walk at the agent speed, which matches the walk clip.")]
+        [SerializeField] private float runSpeedMultiplier = 2.5f;
+        [Tooltip("Metres to the destination below which a villager walks instead of running, so short hops and arrivals are not a sprint.")]
+        [SerializeField] private float runMinDistance = 6f;
         [Tooltip("Seconds between idle glances while standing still (min, max).")]
         [SerializeField] private Vector2 idleGlanceInterval = new Vector2(10f, 24f);
         [SerializeField] private float idleTurnSpeed = 90f;
+        [Tooltip("Degrees per second a villager turns on the spot toward its route before it starts walking.")]
+        [SerializeField] private float turnSpeed = 280f;
+        [Tooltip("Deceleration in metres per second squared while a villager brakes to turn on the spot. Higher stops sooner, lower slides.")]
+        [SerializeField] private float turnBraking = 14f;
         [Tooltip("Seconds between fidgets (glance or breath) while attending a performance (min, max).")]
         [SerializeField] private Vector2 attendFidgetInterval = new Vector2(4f, 9f);
         [SerializeField] private float gatherSeconds = 1.5f;
         [SerializeField] private int carryCapacity = 10;
-        [SerializeField] private float arriveDistance = 2.2f;
+        [SerializeField] private float arriveDistance = 1.4f;
         [SerializeField] private float searchRadius = 25f;
         [SerializeField] private Vector2 wanderInterval = new Vector2(5f, 15f);
 
@@ -67,17 +89,14 @@ namespace SporeTribal.Villagers
         [Tooltip("A target with this many attackers already is skipped for a free enemy nearby, so fights split into duels instead of one pile.")]
         [SerializeField] private int maxAttackersPerTarget = 2;
         [SerializeField] private float swingSeconds = 0.6f;
-        [Tooltip("Tool pitch in degrees over the swing (normalised time). Negative winds up, positive strikes.")]
-        [SerializeField] private AnimationCurve swingCurve = new AnimationCurve(
-            new Keyframe(0f, 0f), new Keyframe(0.45f, -60f), new Keyframe(0.6f, 80f), new Keyframe(1f, 0f));
         [Tooltip("Normalised swing time at which the blow lands and damage is applied.")]
         [SerializeField, Range(0f, 1f)] private float hitMoment = 0.6f;
-        [Tooltip("How far the body steps forward at the peak of the strike.")]
-        [SerializeField] private float lungeDistance = 0.4f;
         [SerializeField] private Color hitFlashColour = Color.white;
         [Tooltip("Degrees the body slumps forward when the tribe surrenders.")]
         [SerializeField] private float mournSlump = 25f;
 
+        private const float TurnStopDegrees = 50f;
+        private const float TurnResumeDegrees = 15f;
         private const int WorkPriority = 40;
         private const int WanderPriority = 60;
         private const float StallGiveUpSeconds = 1.5f;
@@ -88,8 +107,14 @@ namespace SporeTribal.Villagers
         private static readonly int FillColorId = Shader.PropertyToID("_FillColor");
 
         private NavMeshAgent agent;
-        private Renderer body;
-        private MaterialPropertyBlock block;
+        private VillagerModel model;
+        private float baseSpeed;
+        private bool turning;
+        private bool charging;
+        private Color skinTone;
+        private float clipUntil;
+        private static readonly Dictionary<Village, float> tribeTones = new Dictionary<Village, float>();
+        private const float TribeToneGap = 0.4f;
         private MaterialPropertyBlock markerBlock;
         private Renderer markerRenderer;
         private GameObject heldTool;
@@ -125,8 +150,6 @@ namespace SporeTribal.Villagers
         private Tween swingTween;
         private VillagerUnit swingVictim;
         private Building swingStructure;
-        private float swingPeak;
-        private float swingLunged;
         private bool swingStruck;
         private static readonly WaitForSeconds RepathWait = new WaitForSeconds(RepathSeconds);
         private static readonly WaitForSeconds SpotWait = new WaitForSeconds(0.5f);
@@ -138,8 +161,7 @@ namespace SporeTribal.Villagers
             feedback = new VillagerFeedback(agent, PoseTool, SetTilt);
             gatherWait = new WaitForSeconds(gatherSeconds);
             swingWait = new WaitForSeconds(swingSeconds);
-            body = BuildVisualRig();
-            block = new MaterialPropertyBlock();
+            BuildVisualRig();
             markerBlock = new MaterialPropertyBlock();
             markerRenderer = markerRing.GetComponent<Renderer>();
             Health =GetComponent<Health>();
@@ -147,6 +169,8 @@ namespace SporeTribal.Villagers
             Health.Died += Die;
             agent.speed *= 1f + Random.Range(-movementVariance, movementVariance);
             agent.angularSpeed *= 1f + Random.Range(-movementVariance, movementVariance);
+            baseSpeed = agent.speed;
+            turnSpeed *= 1f + Random.Range(-movementVariance, movementVariance);
             ScheduleGlance();
             SetSelected(false);
         }
@@ -155,7 +179,8 @@ namespace SporeTribal.Villagers
         {
             if (Home == null) return;
             Home.Surrendered += Mourn;
-            SetBodyColour(Home.TribeColour);
+            skinTone = RollSkinTone(Home);
+            Repaint(false);
             TintHeadgear();
             WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
         }
@@ -166,11 +191,10 @@ namespace SporeTribal.Villagers
             if (rig != null) Destroy(rig.gameObject);
         }
 
-        private Renderer BuildVisualRig()
+        private void BuildVisualRig()
         {
-            var rootFilter = GetComponent<MeshFilter>();
             var rootRenderer = GetComponent<MeshRenderer>();
-            float feet = rootFilter.sharedMesh.bounds.min.y;
+            float feet = GetComponent<MeshFilter>().sharedMesh.bounds.min.y;
 
             rig = new GameObject(name + " Visual").AddComponent<VillagerVisualRig>();
             rig.Init(transform, feet);
@@ -180,17 +204,58 @@ namespace SporeTribal.Villagers
                 Transform child = transform.GetChild(i);
                 if (child != markerRing.transform) child.SetParent(rig.transform, true);
             }
-
-            var mesh = new GameObject("Body");
-            mesh.transform.SetParent(rig.transform, false);
-            mesh.transform.localPosition = new Vector3(0f, -feet, 0f);
-            mesh.AddComponent<MeshFilter>().sharedMesh = rootFilter.sharedMesh;
-            var bodyRenderer = mesh.AddComponent<MeshRenderer>();
-            bodyRenderer.sharedMaterials = rootRenderer.sharedMaterials;
-            bodyRenderer.shadowCastingMode = rootRenderer.shadowCastingMode;
-            bodyRenderer.receiveShadows = rootRenderer.receiveShadows;
             rootRenderer.enabled = false;
-            return bodyRenderer;
+
+            model = Instantiate(modelPrefab, rig.transform);
+            model.transform.localPosition = Vector3.zero;
+            model.transform.localRotation = Quaternion.identity;
+            rig.SetModel(model.transform, model.ModelScale);
+            model.Init(transform);
+            model.AlignToolSocket(socketPosition, socketEuler);
+            skinTone = skinTones[0];
+            Repaint(false);
+        }
+
+        private Color RollSkinTone(Village tribe)
+        {
+            if (!tribeTones.TryGetValue(tribe, out float position))
+            {
+                position = PickTribeTonePosition();
+                tribeTones[tribe] = position;
+            }
+            Color tone = SampleSkinTones(position) * (1f + Random.Range(-skinVariance, skinVariance));
+            tone.a = 1f;
+            return tone;
+        }
+
+        private static float PickTribeTonePosition()
+        {
+            float best = Random.value;
+            float bestGap = -1f;
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                float candidate = Random.value;
+                float gap = 1f;
+                foreach (float taken in tribeTones.Values) gap = Mathf.Min(gap, Mathf.Abs(candidate - taken));
+                if (gap >= TribeToneGap) return candidate;
+                if (gap > bestGap) { best = candidate; bestGap = gap; }
+            }
+            return best;
+        }
+
+        private Color SampleSkinTones(float position)
+        {
+            float scaled = Mathf.Clamp01(position) * (skinTones.Length - 1);
+            int low = Mathf.FloorToInt(scaled);
+            int high = Mathf.Min(low + 1, skinTones.Length - 1);
+            return Color.Lerp(skinTones[low], skinTones[high], scaled - low);
+        }
+
+        private void Repaint(bool flash)
+        {
+            Color tribe = Home != null ? Home.TribeColour : hitFlashColour;
+            model.SetSkin(flash ? hitFlashColour : skinTone);
+            model.SetClothing(flash ? hitFlashColour : tribe);
         }
 
         private void Update()
@@ -198,7 +263,8 @@ namespace SporeTribal.Villagers
             if (mourning) return;
             agent.avoidancePriority = (wanderCentre != null ? WanderPriority : WorkPriority) + priorityJitter;
             WatchStall();
-            agent.updateRotation = !glancing;
+            agent.updateRotation = false;
+            TurnToTravel();
 
             if (Time.time >= nextAlertScan)
             {
@@ -251,9 +317,41 @@ namespace SporeTribal.Villagers
             }
         }
 
+        private bool Hurrying =>
+            (charging || (wanderCentre == null && order is TribalOrder current && current.Kind != OrderKind.Watch))
+            && (agent.destination - transform.position).sqrMagnitude > runMinDistance * runMinDistance;
+
+        private float Pace => Hurrying ? baseSpeed * runSpeedMultiplier : baseSpeed;
+
+        private void TurnToTravel()
+        {
+            bool travelling = agent.isOnNavMesh && agent.hasPath && !agent.isStopped && !glancing && !feedback.IsBusy;
+            if (!travelling)
+            {
+                agent.speed = Pace;
+                turning = false;
+                return;
+            }
+
+            Vector3 to = agent.steeringTarget - transform.position;
+            to.y = 0f;
+            if (to.sqrMagnitude < 0.04f)
+            {
+                agent.speed = Pace;
+                return;
+            }
+
+            Quaternion want = Quaternion.LookRotation(to);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, want, turnSpeed * Time.deltaTime);
+            float off = Quaternion.Angle(transform.rotation, want);
+            turning = turning ? off > TurnResumeDegrees : off > TurnStopDegrees;
+            if (turning) agent.velocity = Vector3.MoveTowards(agent.velocity, Vector3.zero, turnBraking * Time.deltaTime);
+            agent.speed = turning ? 0f : Pace * Mathf.Lerp(1f, 0.6f, Mathf.InverseLerp(0f, TurnResumeDegrees, off));
+        }
+
         private void Fidget()
         {
-            if (feedback.IsBusy)
+            if (feedback.IsBusy || Time.time < clipUntil)
             {
                 fidgetYaw = 0f;
                 nextFidgetTime = Time.time + 1f;
@@ -303,7 +401,7 @@ namespace SporeTribal.Villagers
 
         private void WatchStall()
         {
-            if (!agent.isOnNavMesh || agent.pathPending || !agent.hasPath || agent.remainingDistance <= agent.stoppingDistance || agent.velocity.sqrMagnitude > 0.01f)
+            if (turning || !agent.isOnNavMesh || agent.pathPending || !agent.hasPath || agent.remainingDistance <= agent.stoppingDistance || agent.velocity.sqrMagnitude > 0.01f)
             {
                 stalledFor = 0f;
                 return;
@@ -322,7 +420,13 @@ namespace SporeTribal.Villagers
         public void MakeChieftain()
         {
             isChieftain = true;
-            if (chieftainHeadgear != null) chieftainHeadgear.SetActive(true);
+            if (chieftainHeadgear != null)
+            {
+                chieftainHeadgear.transform.SetParent(model.HeadAnchor, false);
+                chieftainHeadgear.transform.SetLocalPositionAndRotation(headgearOffset, Quaternion.identity);
+                chieftainHeadgear.transform.localScale = Vector3.one * headgearScale;
+                chieftainHeadgear.SetActive(true);
+            }
             TintHeadgear();
             HoldChieftainTool();
         }
@@ -350,7 +454,7 @@ namespace SporeTribal.Villagers
         {
             if (heldTool != null) Destroy(heldTool);
             Tool = tool;
-            heldTool = tool.SpawnHeld(hand);
+            heldTool = tool.SpawnHeld(model.ToolSocket);
             toolRestPosition = heldTool.transform.localPosition;
             toolRestRotation = heldTool.transform.localRotation;
         }
@@ -481,12 +585,17 @@ namespace SporeTribal.Villagers
 
         public void Bounce(float seconds, float height, bool playTool)
         {
-            if (CanAnimate) feedback.Bounce(seconds, height, playTool);
+            if (!CanAnimate) return;
+            feedback.Stop();
+            PlayFor(VillagerModel.Clip.Dance, seconds, Random.Range(0, 6));
         }
 
         public void Dance(float seconds, bool liked)
         {
-            if (CanAnimate) feedback.Dance(seconds, liked);
+            if (!CanAnimate) return;
+            feedback.Stop();
+            if (liked) PlayFor(VillagerModel.Clip.Dance, seconds, Random.Range(0, 6));
+            else PlayFor(VillagerModel.Clip.CombatIdle, seconds);
         }
 
         public void Shove(Vector3 direction, float distance, float seconds, float tilt)
@@ -513,13 +622,29 @@ namespace SporeTribal.Villagers
 
         private bool CanAnimate => isActiveAndEnabled && !mourning;
 
+        private void PlayFor(VillagerModel.Clip clip, float seconds, int variant = 0)
+        {
+            model.Play(clip, variant);
+            clipUntil = Time.time + seconds;
+            Tween.Delay(this, seconds, static unit => unit.EndClip());
+        }
+
+        private void EndClip()
+        {
+            if (Time.time + 0.02f < clipUntil || !CanAnimate) return;
+            clipUntil = 0f;
+            model.Play(VillagerModel.Clip.Locomotion);
+        }
+
         private void Cancel()
         {
             feedback.Stop();
+            clipUntil = 0f;
+            charging = false;
+            model.Play(VillagerModel.Clip.Locomotion);
             fidgetYaw = 0f;
             SetTilt(0f);
             if (swingTween.isAlive) swingTween.Stop();
-            swingLunged = 0f;
             if (routine != null) StopCoroutine(routine);
             routine = null;
             stage = null;
@@ -568,10 +693,16 @@ namespace SporeTribal.Villagers
                 while (carried < carryCapacity && node.Available)
                 {
                     stage = $"picking {carried + 1}/{carryCapacity}";
-                    yield return gatherWait;
+                    model.Play(VillagerModel.Clip.Gather);
+                    for (float t = 0f; t < gatherSeconds; t += Time.deltaTime)
+                    {
+                        if (node != null) Face(node.transform.position);
+                        yield return null;
+                    }
                     carried += node.Take(1);
                 }
                 ReleaseSpot();
+                model.Play(VillagerModel.Clip.Locomotion);
                 if (carried == 0) continue;
 
                 stage = $"home with {carried}";
@@ -627,7 +758,7 @@ namespace SporeTribal.Villagers
         private void OnDamaged(GameObject source)
         {
             Flash();
-            feedback.Fighting();
+            if (IsAlive && !swingTween.isAlive) model.Play(VillagerModel.Clip.Hit);
             if (Home != null) Home.ReportAttack(transform.position, source != null && source.GetComponent<VillagerUnit>() is VillagerUnit hitBy ? hitBy.Home : null);
             if (!IsAlive || mourning || source == null) return;
             if (!(source.GetComponent<VillagerUnit>() is VillagerUnit attacker) || !attacker.IsAlive || Home == null || !Home.IsHostileTo(attacker.Home)) return;
@@ -662,6 +793,8 @@ namespace SporeTribal.Villagers
                 if (!InReach(target, attackRange))
                 {
                     stage = "charging";
+                    charging = true;
+                    model.Play(VillagerModel.Clip.Locomotion);
                     Vector3 away = transform.position - target.transform.position;
                     away.y = 0f;
                     agent.SetDestination(target.transform.position + away.normalized * (attackRange * 0.8f));
@@ -669,11 +802,13 @@ namespace SporeTribal.Villagers
                     continue;
                 }
 
+                charging = false;
                 agent.ResetPath();
                 Face(target.transform.position);
                 if (Time.time < nextSwingTime)
                 {
                     stage = "squaring up";
+                    model.Play(VillagerModel.Clip.CombatIdle);
                     yield return null;
                     continue;
                 }
@@ -681,6 +816,8 @@ namespace SporeTribal.Villagers
                 yield return Swing(target, null);
             }
 
+            charging = false;
+            model.Play(VillagerModel.Clip.Locomotion);
             TribalOrder? resume = resumeOrder;
             routine = null;
             order = null;
@@ -705,6 +842,7 @@ namespace SporeTribal.Villagers
                 if (Time.time < nextSwingTime)
                 {
                     stage = "squaring up";
+                    model.Play(VillagerModel.Clip.CombatIdle);
                     yield return null;
                     continue;
                 }
@@ -712,6 +850,7 @@ namespace SporeTribal.Villagers
                 yield return Swing(null, building);
             }
 
+            model.Play(VillagerModel.Clip.Locomotion);
             ReleaseSpot();
             routine = null;
             order = null;
@@ -722,25 +861,16 @@ namespace SporeTribal.Villagers
         {
             if (swingTween.isAlive) swingTween.Complete();
             stage = "attacking";
+            model.Play(VillagerModel.Clip.Attack, seconds: swingSeconds);
             swingVictim = victim;
             swingStructure = structure;
-            swingPeak = Mathf.Max(1f, MaxKeyValue(swingCurve));
-            swingLunged = 0f;
             swingStruck = false;
-            swingTween = Tween.Custom(this, 0f, 1f, swingSeconds, static (unit, n) => unit.SwingStep(n), Ease.Linear)
-                .OnComplete(this, static unit => unit.EndSwing());
+            swingTween = Tween.Custom(this, 0f, 1f, swingSeconds, static (unit, n) => unit.SwingStep(n), Ease.Linear);
             return swingWait;
         }
 
         private void SwingStep(float n)
         {
-            float angle = swingCurve.Evaluate(n);
-            PoseTool(angle);
-
-            float lunge = Mathf.Clamp01(angle / swingPeak) * lungeDistance;
-            if (agent.enabled) agent.Move(transform.forward * (lunge - swingLunged));
-            swingLunged = lunge;
-
             Transform aim = swingVictim != null ? swingVictim.transform : swingStructure != null ? swingStructure.transform : null;
             if (aim != null) Face(aim.position);
             if (swingStruck || n < hitMoment) return;
@@ -750,20 +880,6 @@ namespace SporeTribal.Villagers
                 if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + 0.5f)) swingVictim.Health.Damage(Damage, gameObject);
             }
             else if (swingStructure != null && swingStructure.IsStanding) swingStructure.Health.Damage(RazeDamage, gameObject);
-        }
-
-        private void EndSwing()
-        {
-            if (agent.enabled) agent.Move(-transform.forward * swingLunged);
-            swingLunged = 0f;
-            RestTool();
-        }
-
-        private static float MaxKeyValue(AnimationCurve curve)
-        {
-            float max = 0f;
-            foreach (Keyframe key in curve.keys) max = Mathf.Max(max, key.value);
-            return max;
         }
 
         private void PoseTool(float pitch)
@@ -849,7 +965,7 @@ namespace SporeTribal.Villagers
             rig.gameObject.SetActive(true);
             rig.Follow();
             agent.Warp(at);
-            SetBodyColour(Home != null ? Home.TribeColour : hitFlashColour);
+            Repaint(false);
             if (Home == null) return;
             if (Home.HasSurrendered) Mourn(Home);
             else WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
@@ -884,6 +1000,7 @@ namespace SporeTribal.Villagers
             Cancel();
             SetSelected(false);
             enabled = false;
+            model.Die();
             agent.enabled = false;
             foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
             Topple();
@@ -893,17 +1010,15 @@ namespace SporeTribal.Villagers
         {
             float y = transform.position.y;
             Sequence.Create()
-                .Group(Tween.Rotation(transform, transform.rotation * Quaternion.Euler(90f, 0f, 0f), 0.4f, Ease.InQuad))
-                .Group(Tween.PositionY(transform, y - 0.6f, 0.4f, Ease.Linear))
-                .ChainDelay(1.5f)
+                .ChainDelay(2f)
                 .Chain(Tween.PositionY(transform, y - 1.6f, 1f, Ease.Linear))
                 .ChainCallback(gameObject, static go => Destroy(go));
         }
 
         private void Flash()
         {
-            SetBodyColour(hitFlashColour);
-            Tween.Delay(this, 0.08f, static unit => unit.SetBodyColour(unit.Home != null ? unit.Home.TribeColour : unit.hitFlashColour));
+            Repaint(true);
+            Tween.Delay(this, 0.08f, static unit => unit.Repaint(false));
         }
 
         private void TintHeadgear()
@@ -921,13 +1036,6 @@ namespace SporeTribal.Villagers
             }
         }
 
-        private void SetBodyColour(Color colour)
-        {
-            body.GetPropertyBlock(block);
-            block.SetColor(BaseColorId, colour);
-            body.SetPropertyBlock(block);
-        }
-
         private void ReleaseSpot()
         {
             spots?.Release(this);
@@ -942,7 +1050,7 @@ namespace SporeTribal.Villagers
             float stalled = 0f;
             while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance)
             {
-                stalled = !agent.pathPending && agent.velocity.sqrMagnitude < 0.01f ? stalled + Time.deltaTime : 0f;
+                stalled = !turning && !agent.pathPending && agent.velocity.sqrMagnitude < 0.01f ? stalled + Time.deltaTime : 0f;
                 if (stalled > 2f) break;
                 yield return null;
             }

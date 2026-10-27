@@ -15,14 +15,15 @@ MonoBehaviour:
   displayName: Chieftain Staff
   cost: 0
   heldModel: {fileID: 7795269708319294680, guid: eeed3fe2ac5ad9d46a4d42db30c3f45d, type: 3}
-  heldPosition: {x: 0.55, y: 0, z: 0.1}
+  heldPosition: {x: 0, y: 0, z: 0}
   heldEuler: {x: 0, y: 0, z: 0}
-  heldForwardTilt: 15
+  heldForwardTilt: 0
   heldScale: 1
   damage: 12
   razeDamage: 7
   attackCooldown: 2
   instrument: 0
-  balloonIcon: {fileID: 0}
+  icon: {fileID: 0}
+  silhouetteIcon: {fileID: 0}
   callClip: {fileID: 0}
   responseClip: {fileID: 0}

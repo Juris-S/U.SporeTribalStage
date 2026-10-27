@@ -18,7 +18,9 @@ namespace SporeTribal.AI
         [SerializeField] private float noticeDistance = 8f;
         [SerializeField] private float bandRadius = 2.2f;
         [SerializeField] private float bandArc = 120f;
-        [SerializeField] private float audienceRadius = 2.5f;
+        [SerializeField] private float audienceRadius = 3f;
+        [Tooltip("Minimum metres between neighbours on the band and audience arcs. The arc radius grows to keep it as the crowd gets bigger.")]
+        [SerializeField] private float slotSpacing = 1.6f;
 
         private Vector3 toBand;
 
@@ -69,6 +71,7 @@ namespace SporeTribal.AI
         private Vector3 ArcSlot(Vector3 centre, float radius, float arc, int index, int count)
         {
             float t = count < 2 ? 0.5f : (float)index / (count - 1);
+            if (count > 1) radius = Mathf.Max(radius, slotSpacing * (count - 1) / (arc * Mathf.Deg2Rad));
             return centre + Quaternion.AngleAxis(Mathf.Lerp(-arc * 0.5f, arc * 0.5f, t), Vector3.up) * toBand * radius;
         }
 

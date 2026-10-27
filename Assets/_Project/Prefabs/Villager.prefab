@@ -371,7 +371,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: 0
   m_Radius: 0.5
-  m_Speed: 5
+  m_Speed: 2.2
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 120
@@ -398,6 +398,8 @@ MonoBehaviour:
   markerRing: {fileID: 746417529233186942}
   talkRim: {r: 0.3, g: 1, b: 0.3, a: 0.9}
   talkFill: {r: 0.3, g: 1, b: 0.3, a: 0.12}
+  attackRim: {r: 1, g: 0.2, b: 0.28, a: 0.95}
+  attackFill: {r: 1, g: 0.2, b: 0.28, a: 0.18}
   isChieftain: 0
   chieftainHeadgear: {fileID: 5925726475331779873}
   headgearTribeParts:
@@ -406,13 +408,27 @@ MonoBehaviour:
   headgearBandShade: 0.7
   chieftainStaff: {fileID: 11400000, guid: 549c66bdb2d93ac4b846e876fa6f6266, type: 2}
   conductorBaton: {fileID: 11400000, guid: ff80302961721ed42b0396a3c0b8adc8, type: 2}
-  hand: {fileID: 3554257888376844273}
+  modelPrefab: {fileID: 6228232202189441694, guid: 14addfb9b6c8efe4b919804d58586ea0, type: 3}
+  skinTones:
+  - {r: 0.99, g: 0.88, b: 0.8, a: 1}
+  - {r: 0.96, g: 0.8, b: 0.69, a: 1}
+  - {r: 0.87, g: 0.68, b: 0.52, a: 1}
+  - {r: 0.73, g: 0.53, b: 0.37, a: 1}
+  - {r: 0.55, g: 0.37, b: 0.25, a: 1}
+  - {r: 0.36, g: 0.23, b: 0.15, a: 1}
+  skinVariance: 0.05
+  headgearOffset: {x: 0.005, y: -0.055, z: 0.09}
+  headgearScale: 0.28
+  socketPosition: {x: -0.038, y: -0.013, z: -0.14}
+  socketEuler: {x: 81.514, y: 315.527, z: 313.819}
   movementVariance: 0.05
   idleGlanceInterval: {x: 10, y: 24}
   idleTurnSpeed: 90
+  turnSpeed: 280
+  attendFidgetInterval: {x: 4, y: 9}
   gatherSeconds: 1.5
   carryCapacity: 10
-  arriveDistance: 2.2
+  arriveDistance: 1.4
   searchRadius: 25
   wanderInterval: {x: 5, y: 15}
   unarmedDamage: 3

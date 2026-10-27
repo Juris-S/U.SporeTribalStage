@@ -15,10 +15,10 @@ MonoBehaviour:
   displayName: Wooden Horn
   cost: 15
   heldModel: {fileID: 919132149155446097, guid: 535e19aeeebc4c779e021294033cc55f, type: 3}
-  heldPosition: {x: 0.55, y: 0, z: 0.1}
+  heldPosition: {x: 0, y: 0, z: 0}
   heldEuler: {x: 0, y: 90, z: 0}
-  heldForwardTilt: 15
-  heldScale: 1.2
+  heldForwardTilt: 0
+  heldScale: 0.36
   damage: 0
   razeDamage: 0
   attackCooldown: 2

@@ -15,10 +15,15 @@ MonoBehaviour:
   displayName: Axe
   cost: 15
   heldModel: {fileID: 919132149155446097, guid: b243863e37c255a42a87dd4d93a3c965, type: 3}
-  heldPosition: {x: 0.55, y: 0, z: 0.1}
+  heldPosition: {x: 0, y: 0, z: 0}
   heldEuler: {x: 0, y: 270, z: 0}
-  heldForwardTilt: 15
+  heldForwardTilt: 0
   heldScale: 1.2
   damage: 9
   razeDamage: 5
   attackCooldown: 2
+  instrument: 0
+  icon: {fileID: 0}
+  silhouetteIcon: {fileID: 0}
+  callClip: {fileID: 0}
+  responseClip: {fileID: 0}
