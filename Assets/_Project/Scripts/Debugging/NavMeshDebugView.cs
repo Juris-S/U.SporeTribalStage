@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using SporeTribal.Commands;
 using SporeTribal.Selection;
+using SporeTribal.Utilities;
 using SporeTribal.Villagers;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -211,11 +212,9 @@ namespace SporeTribal.Debugging
         {
             if (!visible || Event.current.type != EventType.Repaint) return;
 
-            Camera cam = Camera.main;
-
             foreach (Label label in labels)
             {
-                Vector3 screen = cam.WorldToScreenPoint(label.World);
+                Vector3 screen = ScreenRaycast.WorldToScreen(label.World);
                 if (screen.z <= 0f) continue;
 
                 GUIStyle style = StyleFor(label.Small);

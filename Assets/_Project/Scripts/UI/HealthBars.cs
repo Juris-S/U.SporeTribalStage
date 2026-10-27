@@ -18,13 +18,12 @@ namespace SporeTribal.UI
         private void OnGUI()
         {
             if (Event.current.type != EventType.Repaint) return;
-            Camera cam = ScreenRaycast.Camera;
             foreach (VillagerUnit unit in VillagerUnit.All)
             {
                 Health health = unit.Health;
                 if (health.Current >= health.Max) continue;
                 if (!unit.IsSelected && Time.time - health.LastHitTime > showSeconds) continue;
-                Draw(cam, unit.transform.position + Vector3.up * heightAboveUnit, size, health.Fraction);
+                Draw(unit.transform.position + Vector3.up * heightAboveUnit, size, health.Fraction);
             }
 
             var buildingSize = new Vector2(size.x * buildingWidthScale, size.y);
@@ -33,13 +32,13 @@ namespace SporeTribal.UI
                 Health health = building.Health;
                 if (!building.IsStanding || health.Current >= health.Max) continue;
                 Bounds bounds = building.GetComponentInChildren<Collider>() is Collider c ? c.bounds : new Bounds(building.transform.position, Vector3.one);
-                Draw(cam, new Vector3(bounds.center.x, bounds.max.y + 0.5f, bounds.center.z), buildingSize, health.Fraction);
+                Draw(new Vector3(bounds.center.x, bounds.max.y + 0.5f, bounds.center.z), buildingSize, health.Fraction);
             }
         }
 
-        private static void Draw(Camera cam, Vector3 world, Vector2 size, float fraction)
+        private static void Draw(Vector3 world, Vector2 size, float fraction)
         {
-            Vector3 screen = cam.WorldToScreenPoint(world);
+            Vector3 screen = ScreenRaycast.WorldToScreen(world);
             if (screen.z <= 0f) return;
 
             var back = new Rect(screen.x - size.x * 0.5f, Screen.height - screen.y, size.x, size.y);

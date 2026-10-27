@@ -35,6 +35,7 @@ Shader "Project/SelectionRing"
             #pragma fragment frag
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "WorldBend.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _RimColor;
@@ -65,7 +66,7 @@ Shader "Project/SelectionRing"
             Varyings vert(Attributes input)
             {
                 Varyings output;
-                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                output.positionWS = WorldBend(TransformObjectToWorld(input.positionOS.xyz));
                 output.positionCS = TransformWorldToHClip(output.positionWS);
                 output.uv = input.uv;
                 return output;

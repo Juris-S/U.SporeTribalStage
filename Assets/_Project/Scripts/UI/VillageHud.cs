@@ -91,7 +91,7 @@ namespace SporeTribal.UI
         private static bool AboveCollider(Collider c, Vector2 size, out Rect rect)
         {
             Bounds b = c.bounds;
-            Vector3 screen = ScreenRaycast.Camera.WorldToScreenPoint(new Vector3(b.center.x, b.max.y, b.center.z));
+            Vector3 screen = ScreenRaycast.WorldToScreen(new Vector3(b.center.x, b.max.y, b.center.z));
             rect = new Rect(screen.x - size.x * 0.5f, Screen.height - screen.y - size.y - 8f, size.x, size.y);
             return screen.z > 0f;
         }

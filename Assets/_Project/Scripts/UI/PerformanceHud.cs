@@ -236,7 +236,7 @@ namespace SporeTribal.UI
         {
             bool calling = director.Current == SocialPerformanceDirector.State.Calling && director.Caller != null;
             Vector3 world = calling ? director.Caller.transform.position + Vector3.up * heightAboveCaller : Vector3.zero;
-            if (!calling || ScreenRaycast.Camera.WorldToScreenPoint(world).z <= 0f)
+            if (!calling || ScreenRaycast.WorldToScreen(world).z <= 0f)
             {
                 balloon.EnableInClassList("perf__balloon--visible", false);
                 return;

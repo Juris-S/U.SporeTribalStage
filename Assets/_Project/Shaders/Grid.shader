@@ -49,9 +49,10 @@ Shader "Project/Grid"
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
-            #pragma multi_compile _ _FORWARD_PLUS
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "WorldBend.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
@@ -84,18 +85,19 @@ Shader "Project/Grid"
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
+                float3 flatWS : TEXCOORD2;
             };
 
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
-                OUT.positionWS = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.flatWS = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.positionWS = WorldBend(OUT.flatWS);
                 OUT.positionCS = TransformWorldToHClip(OUT.positionWS);
                 OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
                 return OUT;
             }
 
-            // 1 on a grid line, 0 between, antialiased by screen-space derivative.
             float GridLine(float2 coord, float cell, float width)
             {
                 float2 c = coord / cell;
@@ -103,12 +105,10 @@ Shader "Project/Grid"
                 float2 halfW = max(width / cell * 0.5, w * 0.5);
                 float2 d = abs(frac(c + 0.5) - 0.5);
                 float2 l = 1 - smoothstep(halfW - w * 0.5, halfW + w * 0.5, d);
-                // fade out when lines are sub-pixel to avoid moire at distance
                 l *= saturate(1 - (w - 0.25) * 2);
                 return max(l.x, l.y);
             }
 
-            // 1 at each grid intersection, antialiased, fades when sub-pixel.
             float GridDots(float2 coord, float cell, float radius)
             {
                 float2 c = coord / cell;
@@ -119,7 +119,6 @@ Shader "Project/Grid"
                 return dotMask * saturate(r / aa) * saturate(1 - (aa - 0.25) * 2);
             }
 
-            // World-space value noise: no UVs, no tiling, so it is seamless by construction.
             float Hash(float2 p)
             {
                 p = frac(p * float2(123.34, 456.21));
@@ -154,7 +153,7 @@ Shader "Project/Grid"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                float2 xz = IN.positionWS.xz;
+                float2 xz = IN.flatWS.xz;
                 half3 col = _BaseColor.rgb;
 
                 if (_ShowLines > 0.5)
@@ -199,8 +198,52 @@ Shader "Project/Grid"
             }
             ENDHLSL
         }
-    }
 
-    // Supplies ShadowCaster / DepthOnly passes.
-    Fallback "Universal Render Pipeline/Unlit"
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags { "LightMode" = "ShadowCaster" }
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex ShadowVert
+            #pragma fragment ShadowFrag
+            #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
+            #include "WorldBendPasses.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthOnly"
+            Tags { "LightMode" = "DepthOnly" }
+            ZWrite On
+            ColorMask R
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DepthVert
+            #pragma fragment DepthFrag
+            #include "WorldBendPasses.hlsl"
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+            ZWrite On
+
+            HLSLPROGRAM
+            #pragma target 3.5
+            #pragma vertex DepthVert
+            #pragma fragment DepthNormalsFrag
+            #pragma multi_compile_fragment _ _GBUFFER_NORMALS_OCT
+            #include "WorldBendPasses.hlsl"
+            ENDHLSL
+        }
+    }
 }

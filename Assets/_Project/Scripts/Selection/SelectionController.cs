@@ -44,10 +44,9 @@ namespace SporeTribal.Selection
         {
             Clear();
 
-            Camera cam = ScreenRaycast.Camera;
             foreach (VillagerUnit unit in VillagerUnit.All)
             {
-                Vector3 screen = cam.WorldToScreenPoint(unit.transform.position);
+                Vector3 screen = ScreenRaycast.WorldToScreen(unit.transform.position);
                 if (screen.z > 0f && screenRect.Contains(screen)) Add(unit);
             }
         }
