@@ -258,6 +258,7 @@ GameObject:
   - component: {fileID: 7836503475502363940}
   - component: {fileID: 4316238543952936551}
   - component: {fileID: 5342699419739625029}
+  - component: {fileID: 3439464439874233124}
   m_Layer: 8
   m_Name: Villager
   m_TagString: Untagged
@@ -422,9 +423,12 @@ MonoBehaviour:
   socketPosition: {x: -0.038, y: -0.013, z: -0.14}
   socketEuler: {x: 81.514, y: 315.527, z: 313.819}
   movementVariance: 0.05
+  runSpeedMultiplier: 2.5
+  runMinDistance: 6
   idleGlanceInterval: {x: 10, y: 24}
   idleTurnSpeed: 90
   turnSpeed: 280
+  turnBraking: 14
   attendFidgetInterval: {x: 4, y: 9}
   gatherSeconds: 1.5
   carryCapacity: 10
@@ -440,50 +444,7 @@ MonoBehaviour:
   leashRadius: 30
   maxAttackersPerTarget: 2
   swingSeconds: 0.6
-  swingCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.45
-      value: -60
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 0.6
-      value: 80
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
   hitMoment: 0.6
-  lungeDistance: 0.4
   hitFlashColour: {r: 1, g: 1, b: 1, a: 1}
   mournSlump: 25
 --- !u!114 &5342699419739625029
@@ -501,6 +462,21 @@ MonoBehaviour:
   max: 50
   regenDelay: 20
   regenPerSecond: 2
+--- !u!114 &3439464439874233124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4138247052576624928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f520ab8471a15847a2f4f78042852fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Feedback.HealthEffects
+  hitEffect: 1
+  deathEffect: 2
+  spawnHeight: 1
 --- !u!1 &5444937802923814330
 GameObject:
   m_ObjectHideFlags: 0

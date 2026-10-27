@@ -50,4 +50,5 @@ MonoBehaviour:
   duration: {x: 8, y: 14}
   includeChieftain: 1
   spacing: 1.8
-  secondsPerTurn: 12
+  pulseAmount: 0.25
+  pulseBeats: 3

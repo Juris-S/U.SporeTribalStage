@@ -29,7 +29,6 @@ namespace SporeTribal.Feedback
         private float shoveTilt;
         private Vector3 circleCentre;
         private Vector3 circleOffset;
-        private float circleDegrees;
         private float circlePulse;
         private float circleBeats;
 
@@ -89,20 +88,19 @@ namespace SporeTribal.Feedback
             }, Ease.Linear).OnComplete(this, static fx => fx.Rest());
         }
 
-        public void Circle(Vector3 centre, float degrees, float seconds, float pulse, float beats)
+        public void Circle(Vector3 centre, float seconds, float pulse, float beats)
         {
             if (travel.isAlive) travel.Stop();
             circleCentre = centre;
             circleOffset = transform.position - centre;
             circleOffset.y = 0f;
-            circleDegrees = degrees;
             circlePulse = pulse;
             circleBeats = beats;
             travel = Tween.Custom(this, 0f, 1f, seconds, static (fx, n) =>
             {
                 float env = Mathf.Min(1f, Mathf.Min(n, 1f - n) * 4f);
                 float radius = 1f + fx.circlePulse * env * Mathf.Sin(n * fx.circleBeats * Mathf.PI * 2f);
-                Vector3 at = fx.circleCentre + Quaternion.AngleAxis(n * fx.circleDegrees, Vector3.up) * fx.circleOffset * radius;
+                Vector3 at = fx.circleCentre + fx.circleOffset * radius;
                 Vector3 step = at - fx.transform.position;
                 step.y = 0f;
                 if (fx.agent.enabled) fx.agent.Move(step);

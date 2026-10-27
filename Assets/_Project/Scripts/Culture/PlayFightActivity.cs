@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using PrimeTween;
 using SporeTribal.Commands;
+using SporeTribal.Feedback;
 using SporeTribal.Villagers;
 using UnityEngine;
 
@@ -22,6 +23,11 @@ namespace SporeTribal.Culture
         [SerializeField] private float staggerTilt = -20f;
         [Tooltip("Delay between the pusher lunging and the pushed one reeling.")]
         [SerializeField] private float impactDelay = 0.12f;
+
+        [Header("Effects")]
+        [Tooltip("Looping effect played between each pair while they play fight.")]
+        [SerializeField] private VfxKey fightEffect = VfxKey.PlayFight;
+        [SerializeField] private float effectHeight = 1f;
 
         public PlayFightActivity()
         {
@@ -53,6 +59,8 @@ namespace SporeTribal.Culture
             for (int i = 0; i + 1 < group.Count; i += 2)
             {
                 var bout = new Bout(this, group[i], group[i + 1]);
+                Vector3 middle = (group[i].transform.position + group[i + 1].transform.position) * 0.5f + Vector3.up * effectHeight;
+                ActivityEffect.Spawn(fightEffect, middle, seconds, group[i], group[i + 1]);
                 all.Group(Sequence.Create(cycles: rounds)
                     .ChainDelay(Random.Range(0f, beatSeconds))
                     .ChainCallback(bout, static b => b.Push(true))

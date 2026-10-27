@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Text;
 using SporeTribal.CameraControl;
 using SporeTribal.Culture;
+using SporeTribal.Villagers;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -20,6 +22,11 @@ namespace SporeTribal.Debugging
         [SerializeField] private Key aggressiveKey = Key.F7;
         [SerializeField] private Key friendlyKey = Key.F8;
         [SerializeField] private float shiftStep = 0.25f;
+
+        [Header("Health FX (selected villagers)")]
+        [SerializeField] private Key hitKey = Key.Insert;
+        [SerializeField] private Key killKey = Key.Delete;
+        [SerializeField] private int hitDamage = 5;
 
         private const float StatusSeconds = 3f;
 
@@ -43,6 +50,20 @@ namespace SporeTribal.Debugging
             if (keyboard[friendlyKey].wasPressedThisFrame) ForSubjects(c => c.Shift(shiftStep), "more friendly");
             for (int i = 0; i < activityKeys.Length; i++)
                 if (keyboard[activityKeys[i]].wasPressedThisFrame) Trigger(i);
+            if (keyboard[hitKey].wasPressedThisFrame) DamageSelected(hitDamage);
+            if (keyboard[killKey].wasPressedThisFrame) DamageSelected(int.MaxValue);
+        }
+
+        private void DamageSelected(int amount)
+        {
+            int count = 0;
+            foreach (VillagerUnit unit in new List<VillagerUnit>(VillagerUnit.All))
+            {
+                if (!unit.IsSelected || !unit.Health.IsAlive) continue;
+                unit.Health.Damage(amount, null);
+                count++;
+            }
+            Report(count == 0 ? "No selected villager" : $"{(amount == int.MaxValue ? "Killed" : "Hit")} {count} selected");
         }
 
         private void Trigger(int index)
@@ -97,6 +118,7 @@ namespace SporeTribal.Debugging
             text.Append($"[{aggressiveKey}] aggressive  [{friendlyKey}] friendly  [{toggleOverlayKey}] hide\n");
             for (int i = 0; i < activityKeys.Length; i++)
                 text.Append($"[{activityKeys[i]}] {ActivityLabel(i)}  ");
+            text.Append($"\n[{hitKey}] hit selected  [{killKey}] kill selected");
             if (orbit != null)
                 text.Append($"\n[{orbit.ToggleKey}] orbit {(orbit.IsOrbiting ? orbit.Speed.ToString("0") + " deg/s  (Left/Right)" : "off")}");
             if (Time.unscaledTime < statusUntil) text.Append("\n<color=#ffd24a>").Append(status).Append("</color>");

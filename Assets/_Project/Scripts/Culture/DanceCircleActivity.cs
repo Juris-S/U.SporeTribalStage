@@ -12,8 +12,6 @@ namespace SporeTribal.Culture
         [Header("Dance circle")]
         [Tooltip("Metres between neighbours on the ring.")]
         [SerializeField] private float spacing = 1.8f;
-        [Tooltip("Seconds the ring takes to wheel a full turn.")]
-        [SerializeField] private float secondsPerTurn = 12f;
 
         [Tooltip("How far the ring swells and shrinks as a fraction of its radius (0 = rigid circle).")]
         [SerializeField, Range(0f, 0.6f)] private float pulseAmount = 0.25f;
@@ -36,11 +34,10 @@ namespace SporeTribal.Culture
 
         public override Sequence Perform(IReadOnlyList<VillagerUnit> group, Vector3 centre, float seconds)
         {
-            float spin = (Random.value < 0.5f ? -1f : 1f) * 360f * seconds / secondsPerTurn;
             foreach (VillagerUnit unit in group)
             {
                 unit.Dance(seconds, true);
-                unit.Circle(centre, spin, seconds, pulseAmount, pulseBeats);
+                unit.Circle(centre, seconds, pulseAmount, pulseBeats);
             }
             return default;
         }
