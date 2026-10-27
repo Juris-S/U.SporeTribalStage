@@ -4,6 +4,16 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
 #include "WorldBend.hlsl"
+#include "Wind.hlsl"
+
+float3 BendVertex(float3 positionOS)
+{
+    float3 positionWS = TransformObjectToWorld(positionOS);
+#ifdef _WIND
+    positionWS = ApplyFoliageWind(positionWS);
+#endif
+    return WorldBend(positionWS);
+}
 
 float3 _LightDirection;
 float3 _LightPosition;
@@ -23,7 +33,7 @@ struct BendVaryings
 BendVaryings ShadowVert(BendAttributes IN)
 {
     BendVaryings OUT;
-    float3 positionWS = WorldBend(TransformObjectToWorld(IN.positionOS.xyz));
+    float3 positionWS = BendVertex(IN.positionOS.xyz);
     float3 normalWS = TransformObjectToWorldNormal(IN.normalOS);
 
 #if _CASTING_PUNCTUAL_LIGHT_SHADOW
@@ -45,7 +55,7 @@ half4 ShadowFrag(BendVaryings IN) : SV_Target
 BendVaryings DepthVert(BendAttributes IN)
 {
     BendVaryings OUT;
-    OUT.positionCS = TransformWorldToHClip(WorldBend(TransformObjectToWorld(IN.positionOS.xyz)));
+    OUT.positionCS = TransformWorldToHClip(BendVertex(IN.positionOS.xyz));
     OUT.normalWS = TransformObjectToWorldNormal(IN.normalOS);
     return OUT;
 }
