@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using SporeTribal.Definitions;
 using SporeTribal.Economy;
+using SporeTribal.Feedback;
 using SporeTribal.Orders;
 using SporeTribal.Villagers;
 using UnityEngine;
@@ -29,6 +30,9 @@ namespace SporeTribal.AI
         [Tooltip("The three instrument tools: they supply the icons and sounds for the calls.")]
         [SerializeField] private ToolDefinition[] instruments;
         [SerializeField] private AudioClip failClip;
+        [Tooltip("Rises from each musician while they play an answer.")]
+        [SerializeField] private VfxKey playEffect = VfxKey.Music;
+        [SerializeField] private float playEffectHeight = 1.5f;
 
         [Header("Stage")]
         [SerializeField] private PerformanceStage stage = new PerformanceStage();
@@ -316,8 +320,10 @@ namespace SporeTribal.AI
             bool liked = kind == Demanded;
             foreach (VillagerUnit unit in band)
             {
-                if (unit.IsChieftain || (unit.Tool != null && unit.Tool.Instrument == kind)) unit.Bounce(playSeconds, 0.15f, true);
+                bool musician = !unit.IsChieftain && unit.Tool != null && unit.Tool.Instrument == kind;
+                if (unit.IsChieftain || musician) unit.Bounce(playSeconds, 0.15f, true);
                 else if (liked) unit.Dance(playSeconds, true);
+                if (musician) ActivityEffect.Spawn(playEffect, unit.transform.position + Vector3.up * playEffectHeight, playSeconds, unit);
             }
             Play(ToolFor(kind)?.ResponseClip, Chieftain().transform.position);
             foreach (VillagerUnit unit in audience) unit.Dance(playSeconds, liked);
