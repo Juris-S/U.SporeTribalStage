@@ -169,3 +169,5 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+# Unity always saves NavMeshData as binary, and eol=lf would strip its CR LF byte pairs
+NavMesh*.asset         binary

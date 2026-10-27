@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using SporeTribal.Economy;
 using SporeTribal.Rendering;
 using Unity.AI.Navigation;
@@ -81,11 +82,22 @@ namespace SporeTribal.EditorTools
             {
                 surface.layerMask = ~(1 << IgnoreRaycastLayer);
                 surface.BuildNavMesh();
+                SaveNavMeshAsset(surface);
                 EditorUtility.SetDirty(surface);
             }
 
             Debug.Log($"Nature scattered: {forest.transform.childCount} trees, {rocks.transform.childCount} rocks, " +
                       $"{bushes.transform.childCount} bushes, {tufts} grass tufts in {grass.transform.childCount} chunks.");
+        }
+
+        private static void SaveNavMeshAsset(NavMeshSurface surface)
+        {
+            var scenePath = surface.gameObject.scene.path;
+            if (string.IsNullOrEmpty(scenePath) || surface.navMeshData == null) return;
+            var folder = Path.Combine(Path.GetDirectoryName(scenePath), Path.GetFileNameWithoutExtension(scenePath)).Replace('\\', '/');
+            if (!AssetDatabase.IsValidFolder(folder))
+                AssetDatabase.CreateFolder(Path.GetDirectoryName(scenePath).Replace('\\', '/'), Path.GetFileNameWithoutExtension(scenePath));
+            AssetDatabase.CreateAsset(surface.navMeshData, $"{folder}/NavMesh-{surface.name}.asset");
         }
 
         private static void ScatterForest(GameObject group, Random rng, List<Keepout> keepouts)
