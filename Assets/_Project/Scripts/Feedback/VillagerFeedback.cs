@@ -29,7 +29,17 @@ namespace SporeTribal.Feedback
         private readonly Vector3 restScale;
         private readonly float baseOffset;
         private Tween loop;
+        private Tween travel;
         private float danceRamp;
+        private float shoved;
+        private Vector3 shoveDirection;
+        private float shoveDistance;
+        private float shoveTilt;
+        private Vector3 circleCentre;
+        private Vector3 circleOffset;
+        private float circleDegrees;
+        private float circlePulse;
+        private float circleBeats;
 
         public VillagerFeedback(NavMeshAgent agent, System.Action<float> poseTool, System.Action<float> setTilt)
         {
@@ -81,8 +91,48 @@ namespace SporeTribal.Feedback
                 });
         }
 
+        public void Shove(Vector3 direction, float distance, float seconds, float tilt)
+        {
+            Stop();
+            direction.y = 0f;
+            shoveDirection = direction.normalized;
+            shoveDistance = distance;
+            shoveTilt = tilt;
+            shoved = 0f;
+            loop = Tween.Custom(this, 0f, 1f, seconds, static (fx, n) =>
+            {
+                float arc = Mathf.Sin(n * Mathf.PI);
+                float reach = arc * fx.shoveDistance;
+                if (fx.agent.enabled) fx.agent.Move(fx.shoveDirection * (reach - fx.shoved));
+                fx.shoved = reach;
+                fx.setTilt(arc * fx.shoveTilt);
+                fx.agent.baseOffset = fx.baseOffset + 0.5f * fx.restScale.x * Mathf.Abs(Mathf.Sin(arc * fx.shoveTilt * Mathf.Deg2Rad));
+            }, Ease.Linear).OnComplete(this, static fx => fx.Rest());
+        }
+
+        public void Circle(Vector3 centre, float degrees, float seconds, float pulse, float beats)
+        {
+            if (travel.isAlive) travel.Stop();
+            circleCentre = centre;
+            circleOffset = transform.position - centre;
+            circleOffset.y = 0f;
+            circleDegrees = degrees;
+            circlePulse = pulse;
+            circleBeats = beats;
+            travel = Tween.Custom(this, 0f, 1f, seconds, static (fx, n) =>
+            {
+                float env = Mathf.Min(1f, Mathf.Min(n, 1f - n) * 4f);
+                float radius = 1f + fx.circlePulse * env * Mathf.Sin(n * fx.circleBeats * Mathf.PI * 2f);
+                Vector3 at = fx.circleCentre + Quaternion.AngleAxis(n * fx.circleDegrees, Vector3.up) * fx.circleOffset * radius;
+                Vector3 step = at - fx.transform.position;
+                step.y = 0f;
+                if (fx.agent.enabled) fx.agent.Move(step);
+            }, Ease.Linear);
+        }
+
         public void Stop()
         {
+            if (travel.isAlive) travel.Stop();
             if (!loop.isAlive) return;
             loop.Stop();
             transform.localScale = restScale;

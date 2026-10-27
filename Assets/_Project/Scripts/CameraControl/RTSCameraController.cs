@@ -78,6 +78,8 @@ namespace SporeTribal.CameraControl
             targetDistance = Mathf.Clamp(targetDistance - direction * zoomStep, distanceRange.x, distanceRange.y);
         }
 
+        public void Orbit(float yawDegrees) => targetYaw += yawDegrees;
+
         private void Move(float right, float forward)
         {
             targetFocus += Quaternion.Euler(0f, targetYaw, 0f) * new Vector3(right, 0f, forward);

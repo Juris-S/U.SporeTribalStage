@@ -79,16 +79,21 @@ namespace SporeTribal.Economy
 
         public int RelationshipTo(Village other) => other != null && opinions.TryGetValue(other, out int value) ? value : 0;
 
+        public event System.Action<Village, int> OffendedOther;
+        public event System.Action<Village, int> BefriendedOther;
+
         public void Offend(Village by, int amount)
         {
             if (by == null || by == this) return;
             opinions[by] = Mathf.Clamp(RelationshipTo(by) - amount, -100, 100);
+            by.OffendedOther?.Invoke(this, amount);
         }
 
         public void Befriend(Village by, int amount)
         {
             if (by == null || by == this) return;
             opinions[by] = Mathf.Clamp(RelationshipTo(by) + amount, -100, 100);
+            by.BefriendedOther?.Invoke(this, amount);
             if (RelationshipTo(by) >= AllianceThreshold) DeclareAlliance(by);
         }
 

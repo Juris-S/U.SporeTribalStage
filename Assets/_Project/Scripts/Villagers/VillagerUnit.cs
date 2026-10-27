@@ -335,6 +335,9 @@ namespace SporeTribal.Villagers
             if (wanted != null && Tool != wanted) Equip(wanted);
         }
         public bool IsAttending => order is TribalOrder o && (o.Kind == OrderKind.Perform || o.Kind == OrderKind.Watch);
+        public int OrderSerial { get; private set; }
+        public bool IsIdle => IsFree && !IsChieftain;
+        public bool IsFree => IsAlive && !mourning && !HasOrder && !IsTalkTarget && !IsAttackTarget;
         public bool IsSelected { get; private set; }
         public bool IsTalkTarget { get; private set; }
         public bool IsAttackTarget { get; private set; }
@@ -433,6 +436,7 @@ namespace SporeTribal.Villagers
             }
             Cancel();
             this.order = order;
+            OrderSerial++;
             if (order.Kind == OrderKind.Attack && TribeHasAttackTarget()) SetAttackTarget(true);
             HoldChieftainTool();
             switch (order.Kind)
@@ -483,6 +487,16 @@ namespace SporeTribal.Villagers
         public void Dance(float seconds, bool liked)
         {
             if (CanAnimate) feedback.Dance(seconds, liked);
+        }
+
+        public void Shove(Vector3 direction, float distance, float seconds, float tilt)
+        {
+            if (CanAnimate) feedback.Shove(direction, distance, seconds, tilt);
+        }
+
+        public void Circle(Vector3 centre, float degrees, float seconds, float pulse, float beats)
+        {
+            if (CanAnimate) feedback.Circle(centre, degrees, seconds, pulse, beats);
         }
 
         public void Happy()

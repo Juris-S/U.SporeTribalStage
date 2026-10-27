@@ -20,6 +20,9 @@ namespace SporeTribal.Inputs
         [Tooltip("Set by HUDs: presses that start over a HUD are ignored here.")]
         public Func<Vector2, bool> PointerBlocked;
 
+        [Tooltip("Off while something else (e.g. the auto orbit) owns the arrow keys.")]
+        public bool KeyPanEnabled = true;
+
         public bool IsDragging { get; private set; }
         public Rect DragRect { get; private set; }
 
@@ -73,7 +76,7 @@ namespace SporeTribal.Inputs
             if (scroll != 0f) Zoomed?.Invoke(Mathf.Sign(scroll));
 
             var keyboard = Keyboard.current;
-            if (keyboard == null) return;
+            if (keyboard == null || !KeyPanEnabled) return;
 
             var dir = new Vector2(
                 (keyboard.rightArrowKey.isPressed ? 1f : 0f) - (keyboard.leftArrowKey.isPressed ? 1f : 0f),

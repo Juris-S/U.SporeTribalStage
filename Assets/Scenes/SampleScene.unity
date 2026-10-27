@@ -610,6 +610,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &149468537
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 149468538}
+  m_Layer: 0
+  m_Name: Village Activity Spot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &149468538
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149468537}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.9408598, y: 0, z: 11.61971}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 429429941}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &236792731
 GameObject:
   m_ObjectHideFlags: 0
@@ -749,6 +780,7 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -894,6 +926,24 @@ MonoBehaviour:
   distanceRange: {x: 5, y: 40}
   pitchRange: {x: 20, y: 80}
   smoothing: 12
+--- !u!114 &330585549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e7098d501e2b2b40b8a2f0885b525ab, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.CameraControl.CameraAutoOrbit
+  cameraController: {fileID: 330585548}
+  input: {fileID: 1808637038}
+  toggleKey: 29
+  startSpeed: 8
+  maxSpeed: 60
+  speedRamp: 20
 --- !u!1001 &344177508
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1236,6 +1286,8 @@ GameObject:
   - component: {fileID: 429429941}
   - component: {fileID: 429429939}
   - component: {fileID: 429429937}
+  - component: {fileID: 429429943}
+  - component: {fileID: 429429942}
   m_Layer: 0
   m_Name: Village
   m_TagString: Untagged
@@ -1299,8 +1351,44 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1606940923}
+  - {fileID: 149468538}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &429429942
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429429936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d351743a0e758834f9dd56e9f9bff28e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Culture.IdleActivityDirector
+  activities:
+  - {fileID: 11400000, guid: 15bc5f9bd4e64cd4991353f4cd6578b1, type: 2}
+  - {fileID: 11400000, guid: 8ce6cc62c7fae784892e607330d8a926, type: 2}
+  gapSeconds: {x: 20, y: 40}
+  minimumAppeal: 0.2
+  activitySpot: {fileID: 149468538}
+  gatherTimeout: 12
+--- !u!114 &429429943
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429429936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6965c7026a5aa342b2ac3380e6055a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Culture.TribeCulture
+  startAlignment: 0
+  perOffencePoint: 0.004
+  perFriendshipPoint: 0.006
+  temperThreshold: 0.25
 --- !u!1 &432356418
 GameObject:
   m_ObjectHideFlags: 0
@@ -4387,6 +4475,8 @@ GameObject:
   - component: {fileID: 1424161961}
   - component: {fileID: 1424161963}
   - component: {fileID: 1424161965}
+  - component: {fileID: 1424161967}
+  - component: {fileID: 1424161966}
   m_Layer: 0
   m_Name: Enemy Village
   m_TagString: Untagged
@@ -4499,6 +4589,41 @@ MonoBehaviour:
   musterTimeout: 25
   raidNowKey: 95
   stealNowKey: 96
+--- !u!114 &1424161966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1424161960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d351743a0e758834f9dd56e9f9bff28e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Culture.IdleActivityDirector
+  activities:
+  - {fileID: 11400000, guid: 15bc5f9bd4e64cd4991353f4cd6578b1, type: 2}
+  - {fileID: 11400000, guid: 8ce6cc62c7fae784892e607330d8a926, type: 2}
+  gapSeconds: {x: 20, y: 40}
+  minimumAppeal: 0.2
+  activitySpot: {fileID: 0}
+  gatherTimeout: 12
+--- !u!114 &1424161967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1424161960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6965c7026a5aa342b2ac3380e6055a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Culture.TribeCulture
+  startAlignment: 0
+  perOffencePoint: 0.004
+  perFriendshipPoint: 0.006
+  temperThreshold: 0.25
 --- !u!1001 &1606940922
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4750,6 +4875,7 @@ GameObject:
   - component: {fileID: 1808637049}
   - component: {fileID: 1808637048}
   - component: {fileID: 1808637050}
+  - component: {fileID: 1808637051}
   m_Layer: 0
   m_Name: RTS Systems
   m_TagString: Untagged
@@ -4843,6 +4969,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Inputs.RTSInputController
   dragThresholdPixels: 8
+  KeyPanEnabled: 1
 --- !u!4 &1808637039
 Transform:
   m_ObjectHideFlags: 0
@@ -4999,13 +5126,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3a4bb409cbfb43f8afa34f3561988ebc, type: 2}
   - {fileID: 11400000, guid: cb150edf75614361bcc7333962fcdf7c, type: 2}
   failClip: {fileID: 0}
-  stageDistance: 5
-  crowdReach: 0.8
-  noticeDistance: 8
+  stage:
+    stageDistance: 5
+    crowdReach: 0.8
+    noticeDistance: 8
+    bandRadius: 2.2
+    bandArc: 120
+    audienceRadius: 2.5
   approachTimeout: 45
-  bandRadius: 2.2
-  bandArc: 120
-  audienceRadius: 2.5
   maxAudience: 6
   musterTimeout: 20
   callSeconds: 5
@@ -5047,6 +5175,7 @@ MonoBehaviour:
   heightAboveCaller: 3
   bannerSeconds: 4
   meterSeconds: 0.45
+  hintsToggleKey: 95
   idleTint: {r: 1, g: 1, b: 1, a: 0.35}
 --- !u!114 &1808637049
 MonoBehaviour:
@@ -5089,6 +5218,26 @@ MonoBehaviour:
   m_PivotReferenceSize: 0
   m_Pivot: 0
   m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &1808637051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808637033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9a66228fc3e7e54fb84752d561ac0b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Debugging.CultureDebugPanel
+  startVisible: 1
+  orbit: {fileID: 330585549}
+  toggleOverlayKey: 102
+  cycleSubjectKey: 3
+  activityKeys: 6200000063000000i
+  aggressiveKey: 100
+  friendlyKey: 101
+  shiftStep: 0.25
 --- !u!1001 &1855044381
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5364,7 +5513,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -0}
-  m_LocalScale: {x: 10, y: 1, z: 10}
+  m_LocalScale: {x: 15, y: 1, z: 15}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
