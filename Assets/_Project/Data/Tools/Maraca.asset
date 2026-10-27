@@ -19,3 +19,10 @@ MonoBehaviour:
   heldEuler: {x: 0, y: 90, z: 0}
   heldForwardTilt: 15
   heldScale: 1.4
+  damage: 0
+  razeDamage: 0
+  attackCooldown: 2
+  instrument: 2
+  balloonIcon: {fileID: 0}
+  callClip: {fileID: 0}
+  responseClip: {fileID: 0}

@@ -152,6 +152,7 @@ MonoBehaviour:
   village: {fileID: 429429937}
   count: 6
   spacing: 3
+  firstIsConductor: 1
 --- !u!4 &40150531
 Transform:
   m_ObjectHideFlags: 0
@@ -1258,7 +1259,11 @@ MonoBehaviour:
   dropOffRadius: 4.998865
   dropOffPoint: {fileID: 1606940923}
   wanderRadius: 10
+  offencePerHit: 10
   tribeColour: {r: 0.95, g: 0.62, b: 0.18, a: 1}
+  smallGiftBoost: 20
+  largeGiftBoost: 30
+  soothingSongSeconds: 60
 --- !u!65 &429429939
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4404,7 +4409,11 @@ MonoBehaviour:
   dropOffRadius: 4.998865
   dropOffPoint: {fileID: 527548639}
   wanderRadius: 10
+  offencePerHit: 10
   tribeColour: {r: 0.3, g: 0.55, b: 0.95, a: 1}
+  smallGiftBoost: 20
+  largeGiftBoost: 30
+  soothingSongSeconds: 60
 --- !u!4 &1424161962
 Transform:
   m_ObjectHideFlags: 0
@@ -4736,6 +4745,9 @@ GameObject:
   - component: {fileID: 1808637044}
   - component: {fileID: 1808637046}
   - component: {fileID: 1808637045}
+  - component: {fileID: 1808637047}
+  - component: {fileID: 1808637049}
+  - component: {fileID: 1808637048}
   m_Layer: 0
   m_Name: RTS Systems
   m_TagString: Untagged
@@ -4782,6 +4794,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Commands.MoveOrderDispatcher
   slotSpacing: 1.5
   navMeshSampleRadius: 3
+  performances: {fileID: 1808637047}
 --- !u!114 &1808637036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4965,6 +4978,87 @@ MonoBehaviour:
   showSeconds: 5
   underAttackCooldown: 15
   fontSize: 20
+--- !u!114 &1808637047
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808637033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 639806bdcecbb044d8953ac704e3af96, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.AI.SocialPerformanceDirector
+  village: {fileID: 429429937}
+  rival: {fileID: 1424161961}
+  instruments:
+  - {fileID: 11400000, guid: 18c885cca5f641dd9c28935e3d7f4189, type: 2}
+  - {fileID: 11400000, guid: 3a4bb409cbfb43f8afa34f3561988ebc, type: 2}
+  - {fileID: 11400000, guid: cb150edf75614361bcc7333962fcdf7c, type: 2}
+  failClip: {fileID: 0}
+  stageDistance: 5
+  bandRadius: 2.2
+  bandArc: 120
+  audienceRadius: 2.5
+  maxAudience: 6
+  musterTimeout: 20
+  callSeconds: 5
+  pauseSeconds: 1.5
+  startProgress: 0.35
+  baseIncrement: 0.25
+  failPenalty: 0.15
+  rewardAtFull: 70
+  disappointment: 5
+  harsh:
+    time: 0.7
+    gain: 1
+    penalty: 1.5
+  neutral:
+    time: 1
+    gain: 1
+    penalty: 1
+  warm:
+    time: 1.25
+    gain: 1.25
+    penalty: 0.6
+  smallGift: 50
+  largeGift: 100
+--- !u!114 &1808637048
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808637033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c62ec383c5fd5a7408b9bac43e827b82, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.UI.PerformanceHud
+  director: {fileID: 1808637047}
+  input: {fileID: 1808637038}
+  heightAboveCaller: 3
+  bannerSeconds: 4
+  meterColour: {r: 0.95, g: 0.75, b: 0.2, a: 1}
+--- !u!114 &1808637049
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808637033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36e8ed499b86a4646bd40226846ae7f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Commands.PerformanceInput
+  director: {fileID: 1808637047}
+  hornKey: 41
+  maracaKey: 42
+  didgeridooKey: 43
+  giftKey: 21
+  soothingSongKey: 22
 --- !u!1001 &1855044381
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5656,6 +5750,7 @@ MonoBehaviour:
   village: {fileID: 1424161961}
   count: 6
   spacing: 3
+  firstIsConductor: 0
 --- !u!4 &2007474177
 Transform:
   m_ObjectHideFlags: 0

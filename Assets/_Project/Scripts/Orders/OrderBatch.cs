@@ -19,6 +19,8 @@ namespace SporeTribal.Orders
 
         public readonly List<Entry> Entries = new List<Entry>();
 
+        public RefusalReason GroupRefusal;
+
         public RefusalReason? AllRefusedReason()
         {
             if (Entries.Count == 0) return null;

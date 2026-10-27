@@ -2,6 +2,8 @@ using UnityEngine;
 
 namespace SporeTribal.Economy
 {
+    public enum RelationshipTier { AtWar, Unfriendly, Neutral, Friendly, Allied }
+
     public class Village : MonoBehaviour
     {
         [Tooltip("Distance from the village centre where villagers stand to hand over food. Keep it outside the building footprint.")]
@@ -35,7 +37,38 @@ namespace SporeTribal.Economy
 
         public Color TribeColour => tribeColour;
 
-        public bool IsHostileTo(Village other) => other != null && other != this && !HasSurrendered && !other.HasSurrendered;
+        public const int AllianceThreshold = 70;
+
+        [Header("Diplomacy")]
+        [Tooltip("Relationship gained per 50 food gifted.")]
+        [SerializeField, Min(0)] private int smallGiftBoost = 20;
+        [Tooltip("Relationship gained for a gift of 100 food or more.")]
+        [SerializeField, Min(0)] private int largeGiftBoost = 30;
+        [SerializeField, Min(0)] private float soothingSongSeconds = 60f;
+
+        private readonly System.Collections.Generic.HashSet<Village> allies = new System.Collections.Generic.HashSet<Village>();
+        private float soothedUntil;
+
+        public bool IsSoothed => Time.time < soothedUntil;
+        public float SoothingSongSeconds => soothingSongSeconds;
+        public bool IsAlliedWith(Village other) => other != null && allies.Contains(other);
+
+        public event System.Action<Village, Village> AllianceDeclared;
+
+        public bool IsHostileTo(Village other) =>
+            other != null && other != this && !HasSurrendered && !other.HasSurrendered && !IsAlliedWith(other) && !IsSoothed && !other.IsSoothed;
+
+        public RelationshipTier TierTowards(Village other)
+        {
+            if (IsAlliedWith(other)) return RelationshipTier.Allied;
+            int value = RelationshipTo(other);
+            if (value <= -31) return RelationshipTier.AtWar;
+            if (value < 0) return RelationshipTier.Unfriendly;
+            if (value < 30) return RelationshipTier.Neutral;
+            return value < AllianceThreshold ? RelationshipTier.Friendly : RelationshipTier.Allied;
+        }
+
+        public void Soothe() => soothedUntil = Time.time + soothingSongSeconds;
 
         private readonly System.Collections.Generic.Dictionary<Village, int> opinions = new System.Collections.Generic.Dictionary<Village, int>();
 
@@ -45,6 +78,30 @@ namespace SporeTribal.Economy
         {
             if (by == null || by == this) return;
             opinions[by] = Mathf.Clamp(RelationshipTo(by) - amount, -100, 100);
+        }
+
+        public void Befriend(Village by, int amount)
+        {
+            if (by == null || by == this) return;
+            opinions[by] = Mathf.Clamp(RelationshipTo(by) + amount, -100, 100);
+            if (RelationshipTo(by) >= AllianceThreshold) DeclareAlliance(by);
+        }
+
+        public void DeclareAlliance(Village with)
+        {
+            if (with == null || with == this || IsAlliedWith(with)) return;
+            allies.Add(with);
+            with.allies.Add(this);
+            AllianceDeclared?.Invoke(this, with);
+            with.AllianceDeclared?.Invoke(with, this);
+        }
+
+        public bool GiftFood(Village to, int amount)
+        {
+            if (to == null || to == this || amount <= 0 || !TrySpend(amount)) return false;
+            to.Deposit(amount);
+            to.Befriend(this, amount >= 100 ? largeGiftBoost : smallGiftBoost);
+            return true;
         }
 
         public void Deposit(int amount) => Food += amount;

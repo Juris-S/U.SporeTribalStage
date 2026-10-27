@@ -23,6 +23,22 @@ namespace SporeTribal.Definitions
         [Tooltip("Seconds between hits.")]
         [SerializeField] private float attackCooldown = 2f;
 
+        [Header("Social")]
+        [Tooltip("None for non-instruments. Instruments are what a band performs with.")]
+        [SerializeField] private InstrumentKind instrument = InstrumentKind.None;
+        [Tooltip("Shown in the audience's thought balloon and on the HUD button.")]
+        [SerializeField] private Sprite balloonIcon;
+        [Tooltip("Played when the audience calls for this instrument.")]
+        [SerializeField] private AudioClip callClip;
+        [Tooltip("Played when the band answers with this instrument.")]
+        [SerializeField] private AudioClip responseClip;
+
+        public InstrumentKind Instrument => instrument;
+        public Sprite BalloonIcon => balloonIcon;
+        public AudioClip CallClip => callClip;
+        public AudioClip ResponseClip => responseClip;
+        public bool IsInstrument => instrument != InstrumentKind.None;
+
         public string DisplayName => displayName;
         public int Cost => cost;
         public int Damage => damage;

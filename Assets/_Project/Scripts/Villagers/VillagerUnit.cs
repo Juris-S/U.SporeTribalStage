@@ -16,6 +16,18 @@ namespace SporeTribal.Villagers
         public static IReadOnlyList<VillagerUnit> All => all;
 
         [SerializeField] private GameObject selectionRing;
+        [Tooltip("The tribe leader and band conductor: a performance cannot start without the chieftain.")]
+        [SerializeField] private bool isChieftain;
+        [Tooltip("Hat, feathers or mask shown only on the chieftain.")]
+        [SerializeField] private GameObject chieftainHeadgear;
+        [Tooltip("Headgear parts painted in the tribe colour so the chieftain matches its people (the rest keeps its own colours).")]
+        [SerializeField] private Renderer[] headgearTribeParts;
+        [Tooltip("Brightness of the second part relative to the tribe colour, so the band reads against the crown.")]
+        [SerializeField, Range(0.3f, 1f)] private float headgearBandShade = 0.7f;
+        [Tooltip("The chieftain's own weapon, held at all times outside a performance. Chieftains never take tools from buildings.")]
+        [SerializeField] private ToolDefinition chieftainStaff;
+        [Tooltip("Raised in place of the staff while the chieftain conducts a performance.")]
+        [SerializeField] private ToolDefinition conductorBaton;
         [Tooltip("Unscaled anchor under the body where the equipped tool is held.")]
         [SerializeField] private Transform hand;
         [Tooltip("Each villager rolls its speed and turn speed within +/- this fraction, once, so a group never moves in lockstep.")]
@@ -88,11 +100,14 @@ namespace SporeTribal.Villagers
         private float nextAlertScan;
         private float nextSwingTime;
         private bool mourning;
+        private Coroutine bounceRoutine;
+        private float baseOffset;
 
         private void Awake()
         {
             priorityJitter = Random.Range(0, 15);
             agent = GetComponent<NavMeshAgent>();
+            baseOffset = agent.baseOffset;
             body = GetComponent<Renderer>();
             block = new MaterialPropertyBlock();
             Health = GetComponent<Health>();
@@ -109,6 +124,7 @@ namespace SporeTribal.Villagers
             if (Home == null) return;
             Home.Surrendered += Mourn;
             SetBodyColour(Home.TribeColour);
+            TintHeadgear();
             WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
         }
 
@@ -134,6 +150,13 @@ namespace SporeTribal.Villagers
             {
                 glancing = false;
                 ScheduleGlance();
+                return;
+            }
+
+            if (IsAttending)
+            {
+                glancing = false;
+                Face(order.Value.Look);
                 return;
             }
 
@@ -197,6 +220,23 @@ namespace SporeTribal.Villagers
 
         public Vector3[] PathCorners => agent.hasPath ? agent.path.corners : System.Array.Empty<Vector3>();
 
+        public bool IsChieftain => isChieftain;
+        public void MakeChieftain()
+        {
+            isChieftain = true;
+            if (chieftainHeadgear != null) chieftainHeadgear.SetActive(true);
+            TintHeadgear();
+            HoldChieftainTool();
+        }
+
+        private void HoldChieftainTool()
+        {
+            if (!isChieftain) return;
+            bool conducting = order is TribalOrder o && o.Kind == OrderKind.Perform && conductorBaton != null;
+            ToolDefinition wanted = conducting ? conductorBaton : chieftainStaff;
+            if (wanted != null && Tool != wanted) Equip(wanted);
+        }
+        public bool IsAttending => order is TribalOrder o && (o.Kind == OrderKind.Perform || o.Kind == OrderKind.Watch);
         public bool IsSelected { get; private set; }
         public Village Home { get; set; }
         public ToolDefinition Tool { get; private set; }
@@ -253,6 +293,7 @@ namespace SporeTribal.Villagers
             }
             Cancel();
             this.order = order;
+            HoldChieftainTool();
             switch (order.Kind)
             {
                 case OrderKind.Move:
@@ -271,11 +312,51 @@ namespace SporeTribal.Villagers
                 case OrderKind.Raze:
                     routine = StartCoroutine(RazeRoutine(order.Structure));
                     break;
+                case OrderKind.Perform:
+                case OrderKind.Watch:
+                    routine = StartCoroutine(AttendRoutine(order));
+                    break;
             }
+        }
+
+        public void Release(bool resumeWander)
+        {
+            if (!IsAttending) return;
+            Cancel();
+            HoldChieftainTool();
+            if (resumeWander && Home != null && !mourning) WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
+        }
+
+        public void Bounce(float seconds, float height, bool playTool)
+        {
+            if (!isActiveAndEnabled || mourning) return;
+            if (bounceRoutine != null) StopCoroutine(bounceRoutine);
+            bounceRoutine = StartCoroutine(BounceRoutine(seconds, height, playTool));
+        }
+
+        private IEnumerator BounceRoutine(float seconds, float height, bool playTool)
+        {
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                float n = t / seconds;
+                agent.baseOffset = baseOffset + Mathf.Abs(Mathf.Sin(n * Mathf.PI * 3f)) * height;
+                if (playTool) PoseTool(Mathf.Sin(n * Mathf.PI * 8f) * 18f);
+                yield return null;
+            }
+            EndBounce();
+        }
+
+        private void EndBounce()
+        {
+            if (bounceRoutine != null) StopCoroutine(bounceRoutine);
+            bounceRoutine = null;
+            if (agent != null) agent.baseOffset = baseOffset;
+            RestTool();
         }
 
         private void Cancel()
         {
+            if (bounceRoutine != null) EndBounce();
             if (routine != null) StopCoroutine(routine);
             routine = null;
             stage = null;
@@ -348,6 +429,15 @@ namespace SporeTribal.Villagers
             routine = null;
             stage = null;
             WanderNear(home, Random.Range(wanderInterval.x, wanderInterval.y));
+        }
+
+        private IEnumerator AttendRoutine(TribalOrder order)
+        {
+            bool performing = order.Kind == OrderKind.Perform;
+            stage = performing ? "to the stage" : "gathering to watch";
+            yield return WalkTo(order.Point);
+            stage = performing ? "performing" : "watching";
+            while (true) yield return null;
         }
 
         private IEnumerator EquipRoutine(ToolBuilding building)
@@ -649,6 +739,21 @@ namespace SporeTribal.Villagers
             SetBodyColour(hitFlashColour);
             yield return new WaitForSeconds(0.08f);
             SetBodyColour(Home != null ? Home.TribeColour : hitFlashColour);
+        }
+
+        private void TintHeadgear()
+        {
+            if (headgearTribeParts == null || Home == null) return;
+            for (int i = 0; i < headgearTribeParts.Length; i++)
+            {
+                Renderer part = headgearTribeParts[i];
+                if (part == null) continue;
+                Color colour = i == 0 ? Home.TribeColour : Home.TribeColour * headgearBandShade;
+                colour.a = 1f;
+                var partBlock = new MaterialPropertyBlock();
+                partBlock.SetColor(BaseColorId, colour);
+                part.SetPropertyBlock(partBlock);
+            }
         }
 
         private void SetBodyColour(Color colour)

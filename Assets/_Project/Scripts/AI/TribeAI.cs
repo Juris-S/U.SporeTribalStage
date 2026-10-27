@@ -75,7 +75,7 @@ namespace SporeTribal.AI
             Gather();
         }
 
-        private bool Busy(VillagerUnit unit) => raids.Owns(unit) || NeedsShelter(unit);
+        private bool Busy(VillagerUnit unit) => raids.Owns(unit) || NeedsShelter(unit) || unit.IsAttending;
 
         private bool NeedsShelter(VillagerUnit unit) => sanctuary != null && sanctuary.NeedsShelter(unit);
 
