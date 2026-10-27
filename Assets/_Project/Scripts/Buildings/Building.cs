@@ -1,5 +1,5 @@
+using PrimeTween;
 using SporeTribal.Villagers;
-using System.Collections;
 using System.Collections.Generic;
 using SporeTribal.Combat;
 using SporeTribal.Economy;
@@ -43,19 +43,11 @@ namespace SporeTribal.Buildings
             if (attacker != null && owner.IsHostileTo(attacker.Home)) VillagerUnit.CallForHelp(owner, transform.position, attacker);
         }
 
-        protected virtual void Collapse() => StartCoroutine(Sink());
-
-        private IEnumerator Sink()
+        protected virtual void Collapse()
         {
-            Vector3 start = transform.position;
-            Quaternion from = transform.rotation;
-            Quaternion to = from * Quaternion.Euler(6f, 0f, 4f);
             float drop = GetComponentInChildren<Collider>() is Collider c ? c.bounds.size.y * 0.4f : 1f;
-            for (float t = 0f; t < 1f; t += Time.deltaTime / 1.2f)
-            {
-                transform.SetPositionAndRotation(start + Vector3.down * (drop * t), Quaternion.Slerp(from, to, t));
-                yield return null;
-            }
+            Tween.Position(transform, transform.position + Vector3.down * drop, 1.2f, Ease.Linear);
+            Tween.Rotation(transform, transform.rotation * Quaternion.Euler(6f, 0f, 4f), 1.2f, Ease.Linear);
         }
     }
 }

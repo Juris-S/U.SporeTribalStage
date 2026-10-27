@@ -23,6 +23,7 @@ MonoBehaviour:
   razeDamage: 0
   attackCooldown: 2
   instrument: 3
-  balloonIcon: {fileID: 0}
+  icon: {fileID: 2800000, guid: 56cb920fb2f5bca49ae0ba3576714b03, type: 3}
+  silhouetteIcon: {fileID: 2800000, guid: 16233f8a37433c745a4155846adadb86, type: 3}
   callClip: {fileID: 0}
   responseClip: {fileID: 0}

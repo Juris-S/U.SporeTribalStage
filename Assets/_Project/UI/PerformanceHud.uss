@@ -1,0 +1,149 @@
+.perf {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.perf__banner {
+    position: absolute;
+    top: 64px;
+    left: 50%;
+    width: 460px;
+    margin-left: -230px;
+    padding: 8px 12px;
+    -unity-text-align: middle-center;
+    font-size: 18px;
+    -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
+    color: rgb(255, 255, 255);
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 12px;
+    display: none;
+}
+
+.perf__banner--visible {
+    display: flex;
+}
+
+.perf__relationship {
+    position: absolute;
+    left: 12px;
+    bottom: 8px;
+    font-size: 14px;
+    -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgb(0, 0, 0);
+}
+
+.perf__tray {
+    position: absolute;
+    bottom: 48px;
+    left: 50%;
+    width: 360px;
+    margin-left: -180px;
+    align-items: center;
+    display: none;
+}
+
+.perf__tray--visible {
+    display: flex;
+}
+
+.perf__meter {
+    width: 320px;
+    height: 20px;
+    padding: 2px;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.perf__meter-fill {
+    height: 100%;
+    border-radius: 8px;
+    background-color: rgb(211, 89, 200);
+}
+
+.perf__meter-fill--good {
+    background-color: rgb(211, 89, 200);
+}
+
+.perf__meter-fill--bad {
+    background-color: rgb(235, 70, 70);
+}
+
+.perf__buttons {
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.perf__button {
+    width: 84px;
+    height: 84px;
+    margin: 0 4px;
+    padding: 0;
+    border-width: 3px;
+    border-color: rgba(0, 0, 0, 0);
+    border-radius: 16px;
+    background-color: rgba(0, 0, 0, 0.55);
+    align-items: center;
+    justify-content: center;
+}
+
+.perf__button--ready {
+    background-color: rgba(10, 40, 0, 0.85);
+    border-color: rgb(39, 141, 0);
+}
+
+.perf__button-icon {
+    width: 60px;
+    height: 60px;
+}
+
+.perf__button-key {
+    position: absolute;
+    left: 8px;
+    top: 4px;
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgb(0, 0, 0);
+}
+
+.perf__button-count {
+    position: absolute;
+    right: 8px;
+    bottom: 4px;
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgb(0, 0, 0);
+}
+
+.perf__balloon {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    padding: 6px;
+    border-radius: 18px;
+    background-color: rgba(255, 255, 255, 0.92);
+    border-width: 3px;
+    border-color: rgb(40, 30, 20);
+    display: none;
+}
+
+.perf__balloon--visible {
+    display: flex;
+}
+
+.perf__balloon-icon {
+    flex-grow: 1;
+}

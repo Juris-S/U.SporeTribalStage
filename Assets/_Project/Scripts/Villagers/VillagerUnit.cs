@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using PrimeTween;
 using SporeTribal.Buildings;
 using SporeTribal.Combat;
 using SporeTribal.Definitions;
 using SporeTribal.Economy;
+using SporeTribal.Feedback;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -15,7 +17,13 @@ namespace SporeTribal.Villagers
         private static readonly List<VillagerUnit> all = new List<VillagerUnit>();
         public static IReadOnlyList<VillagerUnit> All => all;
 
-        [SerializeField] private GameObject selectionRing;
+        [Tooltip("Ground ring under the villager: the material's colour when selected, the talk colours when the player is about to perform for them.")]
+        [UnityEngine.Serialization.FormerlySerializedAs("selectionRing")]
+        [SerializeField] private GameObject markerRing;
+        [SerializeField, ColorUsage(true, true)] private Color talkRim = new Color(0.3f, 1f, 0.3f, 0.9f);
+        [SerializeField] private Color talkFill = new Color(0.3f, 1f, 0.3f, 0.12f);
+        [SerializeField, ColorUsage(true, true)] private Color attackRim = new Color(1f, 0.2f, 0.28f, 0.95f);
+        [SerializeField] private Color attackFill = new Color(1f, 0.2f, 0.28f, 0.18f);
         [Tooltip("The tribe leader and band conductor: a performance cannot start without the chieftain.")]
         [SerializeField] private bool isChieftain;
         [Tooltip("Hat, feathers or mask shown only on the chieftain.")]
@@ -33,8 +41,10 @@ namespace SporeTribal.Villagers
         [Tooltip("Each villager rolls its speed and turn speed within +/- this fraction, once, so a group never moves in lockstep.")]
         [SerializeField, Range(0f, 0.2f)] private float movementVariance = 0.05f;
         [Tooltip("Seconds between idle glances while standing still (min, max).")]
-        [SerializeField] private Vector2 idleGlanceInterval = new Vector2(4f, 10f);
+        [SerializeField] private Vector2 idleGlanceInterval = new Vector2(10f, 24f);
         [SerializeField] private float idleTurnSpeed = 90f;
+        [Tooltip("Seconds between fidgets (glance or breath) while attending a performance (min, max).")]
+        [SerializeField] private Vector2 attendFidgetInterval = new Vector2(4f, 9f);
         [SerializeField] private float gatherSeconds = 1.5f;
         [SerializeField] private int carryCapacity = 10;
         [SerializeField] private float arriveDistance = 2.2f;
@@ -74,14 +84,23 @@ namespace SporeTribal.Villagers
         private const float AlertScanSeconds = 0.5f;
         private const float RepathSeconds = 0.2f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
+        private static readonly int FillColorId = Shader.PropertyToID("_FillColor");
 
         private NavMeshAgent agent;
         private Renderer body;
         private MaterialPropertyBlock block;
+        private MaterialPropertyBlock markerBlock;
+        private Renderer markerRenderer;
         private GameObject heldTool;
         private Vector3 toolRestPosition;
         private Quaternion toolRestRotation;
         private float nextGlanceTime;
+        private float nextFidgetTime;
+        private float fidgetYaw;
+        private const float RingLift = 0.03f;
+        private const float RingGroundSearch = 3f;
+        private VillagerVisualRig rig;
         private float glanceYaw;
         private bool glancing;
         private float glanceStarted;
@@ -100,17 +119,30 @@ namespace SporeTribal.Villagers
         private float nextAlertScan;
         private float nextSwingTime;
         private bool mourning;
-        private Coroutine bounceRoutine;
-        private float baseOffset;
+        private VillagerFeedback feedback;
+        private WaitForSeconds gatherWait;
+        private WaitForSeconds swingWait;
+        private Tween swingTween;
+        private VillagerUnit swingVictim;
+        private Building swingStructure;
+        private float swingPeak;
+        private float swingLunged;
+        private bool swingStruck;
+        private static readonly WaitForSeconds RepathWait = new WaitForSeconds(RepathSeconds);
+        private static readonly WaitForSeconds SpotWait = new WaitForSeconds(0.5f);
 
         private void Awake()
         {
             priorityJitter = Random.Range(0, 15);
             agent = GetComponent<NavMeshAgent>();
-            baseOffset = agent.baseOffset;
-            body = GetComponent<Renderer>();
+            feedback = new VillagerFeedback(agent, PoseTool, SetTilt);
+            gatherWait = new WaitForSeconds(gatherSeconds);
+            swingWait = new WaitForSeconds(swingSeconds);
+            body = BuildVisualRig();
             block = new MaterialPropertyBlock();
-            Health = GetComponent<Health>();
+            markerBlock = new MaterialPropertyBlock();
+            markerRenderer = markerRing.GetComponent<Renderer>();
+            Health =GetComponent<Health>();
             Health.Damaged += OnDamaged;
             Health.Died += Die;
             agent.speed *= 1f + Random.Range(-movementVariance, movementVariance);
@@ -131,6 +163,34 @@ namespace SporeTribal.Villagers
         private void OnDestroy()
         {
             if (Home != null) Home.Surrendered -= Mourn;
+            if (rig != null) Destroy(rig.gameObject);
+        }
+
+        private Renderer BuildVisualRig()
+        {
+            var rootFilter = GetComponent<MeshFilter>();
+            var rootRenderer = GetComponent<MeshRenderer>();
+            float feet = rootFilter.sharedMesh.bounds.min.y;
+
+            rig = new GameObject(name + " Visual").AddComponent<VillagerVisualRig>();
+            rig.Init(transform, feet);
+
+            for (int i = transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = transform.GetChild(i);
+                if (child != markerRing.transform) child.SetParent(rig.transform, true);
+            }
+
+            var mesh = new GameObject("Body");
+            mesh.transform.SetParent(rig.transform, false);
+            mesh.transform.localPosition = new Vector3(0f, -feet, 0f);
+            mesh.AddComponent<MeshFilter>().sharedMesh = rootFilter.sharedMesh;
+            var bodyRenderer = mesh.AddComponent<MeshRenderer>();
+            bodyRenderer.sharedMaterials = rootRenderer.sharedMaterials;
+            bodyRenderer.shadowCastingMode = rootRenderer.shadowCastingMode;
+            bodyRenderer.receiveShadows = rootRenderer.receiveShadows;
+            rootRenderer.enabled = false;
+            return bodyRenderer;
         }
 
         private void Update()
@@ -143,6 +203,8 @@ namespace SporeTribal.Villagers
             if (Time.time >= nextAlertScan)
             {
                 nextAlertScan = Time.time + AlertScanSeconds;
+                if (IsAttackTarget) { if (!IsFighting && !IsBeingAttacked()) SetAttackTarget(false); }
+                else if (IsFighting && TribeHasAttackTarget()) SetAttackTarget(true);
                 if (CanAutoDefend && NearestHostile(alertRadius, attackingOnly: true) is VillagerUnit enemy) Defend(enemy);
             }
 
@@ -156,7 +218,9 @@ namespace SporeTribal.Villagers
             if (IsAttending)
             {
                 glancing = false;
-                Face(order.Value.Look);
+                ScheduleGlance();
+                Fidget();
+                Face(order.Value.Look, fidgetYaw);
                 return;
             }
 
@@ -181,10 +245,44 @@ namespace SporeTribal.Villagers
             }
             else if (Time.time >= nextGlanceTime)
             {
-                glanceYaw = Random.Range(0f, 360f);
+                glanceYaw = transform.eulerAngles.y + Random.Range(-30f, 30f);
                 glanceStarted = Time.time;
                 glancing = true;
             }
+        }
+
+        private void Fidget()
+        {
+            if (feedback.IsBusy)
+            {
+                fidgetYaw = 0f;
+                nextFidgetTime = Time.time + 1f;
+                return;
+            }
+            if (Time.time < nextFidgetTime) return;
+            if (fidgetYaw != 0f)
+            {
+                fidgetYaw = 0f;
+                nextFidgetTime = Time.time + Random.Range(attendFidgetInterval.x, attendFidgetInterval.y);
+            }
+            else
+            {
+                fidgetYaw = Random.Range(10f, 30f) * (Random.value < 0.5f ? -1f : 1f);
+                nextFidgetTime = Time.time + Random.Range(0.8f, 1.6f);
+            }
+        }
+
+        private void SetTilt(float degrees) => rig.Tilt = degrees;
+
+        private void LateUpdate()
+        {
+            if (!markerRing.activeSelf) return;
+            Transform ring = markerRing.transform;
+            Vector3 at = transform.position;
+            if (NavMesh.SamplePosition(at, out NavMeshHit ground, RingGroundSearch, NavMesh.AllAreas)) at.y = ground.position.y;
+            ring.SetPositionAndRotation(
+                new Vector3(at.x, at.y + RingLift, at.z),
+                Quaternion.Euler(0f, transform.eulerAngles.y, 0f) * Quaternion.Euler(90f, 0f, 0f));
         }
 
         private void ScheduleGlance() => nextGlanceTime = Time.time + Random.Range(idleGlanceInterval.x, idleGlanceInterval.y);
@@ -238,6 +336,8 @@ namespace SporeTribal.Villagers
         }
         public bool IsAttending => order is TribalOrder o && (o.Kind == OrderKind.Perform || o.Kind == OrderKind.Watch);
         public bool IsSelected { get; private set; }
+        public bool IsTalkTarget { get; private set; }
+        public bool IsAttackTarget { get; private set; }
         public Village Home { get; set; }
         public ToolDefinition Tool { get; private set; }
         public Health Health { get; private set; }
@@ -268,8 +368,48 @@ namespace SporeTribal.Villagers
 
         public void SetSelected(bool selected)
         {
+            if (selected && !IsSelected) feedback.Selected();
             IsSelected = selected;
-            selectionRing.SetActive(selected);
+            RefreshMarker();
+        }
+
+        public void SetTalkTarget(bool talkTarget)
+        {
+            IsTalkTarget = talkTarget;
+            RefreshMarker();
+        }
+
+        public void SetAttackTarget(bool attackTarget)
+        {
+            IsAttackTarget = attackTarget;
+            RefreshMarker();
+        }
+
+        private bool TribeHasAttackTarget()
+        {
+            foreach (VillagerUnit other in all)
+                if (other.Home == Home && other.IsAttackTarget) return true;
+            return false;
+        }
+
+        private bool IsBeingAttacked()
+        {
+            foreach (VillagerUnit other in all)
+                if (other.IsAlive && other.order is TribalOrder o && o.Kind == OrderKind.Attack && o.Target == this) return true;
+            return false;
+        }
+
+        private void RefreshMarker()
+        {
+            bool tinted = !IsSelected && (IsTalkTarget || IsAttackTarget);
+            markerRing.SetActive(IsSelected || tinted);
+            if (tinted)
+            {
+                markerBlock.SetColor(RimColorId, IsAttackTarget ? attackRim : talkRim);
+                markerBlock.SetColor(FillColorId, IsAttackTarget ? attackFill : talkFill);
+                markerRenderer.SetPropertyBlock(markerBlock);
+            }
+            else markerRenderer.SetPropertyBlock(null);
         }
 
         public string OrderLabel => HasOrder ? order.Value.Kind.ToString() : "none";
@@ -293,6 +433,7 @@ namespace SporeTribal.Villagers
             }
             Cancel();
             this.order = order;
+            if (order.Kind == OrderKind.Attack && TribeHasAttackTarget()) SetAttackTarget(true);
             HoldChieftainTool();
             switch (order.Kind)
             {
@@ -319,6 +460,13 @@ namespace SporeTribal.Villagers
             }
         }
 
+        public void Warp(Vector3 position)
+        {
+            Cancel();
+            order = null;
+            agent.Warp(position);
+        }
+
         public void Release(bool resumeWander)
         {
             if (!IsAttending) return;
@@ -329,34 +477,35 @@ namespace SporeTribal.Villagers
 
         public void Bounce(float seconds, float height, bool playTool)
         {
-            if (!isActiveAndEnabled || mourning) return;
-            if (bounceRoutine != null) StopCoroutine(bounceRoutine);
-            bounceRoutine = StartCoroutine(BounceRoutine(seconds, height, playTool));
+            if (CanAnimate) feedback.Bounce(seconds, height, playTool);
         }
 
-        private IEnumerator BounceRoutine(float seconds, float height, bool playTool)
+        public void Dance(float seconds, bool liked)
         {
-            for (float t = 0f; t < seconds; t += Time.deltaTime)
-            {
-                float n = t / seconds;
-                agent.baseOffset = baseOffset + Mathf.Abs(Mathf.Sin(n * Mathf.PI * 3f)) * height;
-                if (playTool) PoseTool(Mathf.Sin(n * Mathf.PI * 8f) * 18f);
-                yield return null;
-            }
-            EndBounce();
+            if (CanAnimate) feedback.Dance(seconds, liked);
         }
 
-        private void EndBounce()
+        public void Happy()
         {
-            if (bounceRoutine != null) StopCoroutine(bounceRoutine);
-            bounceRoutine = null;
-            if (agent != null) agent.baseOffset = baseOffset;
-            RestTool();
+            nextFidgetTime = Time.time + 1f;
+            if (CanAnimate) feedback.Happy();
         }
+
+        public void Excited()
+        {
+            nextFidgetTime = Time.time + 1f;
+            if (CanAnimate) feedback.Excited();
+        }
+
+        private bool CanAnimate => isActiveAndEnabled && !mourning;
 
         private void Cancel()
         {
-            if (bounceRoutine != null) EndBounce();
+            feedback.Stop();
+            fidgetYaw = 0f;
+            SetTilt(0f);
+            if (swingTween.isAlive) swingTween.Stop();
+            swingLunged = 0f;
             if (routine != null) StopCoroutine(routine);
             routine = null;
             stage = null;
@@ -391,7 +540,7 @@ namespace SporeTribal.Villagers
                     else if (node.Available)
                     {
                         stage = "waiting for a spot";
-                        yield return new WaitForSeconds(0.5f);
+                        yield return SpotWait;
                         continue;
                     }
                     else break;
@@ -405,7 +554,7 @@ namespace SporeTribal.Villagers
                 while (carried < carryCapacity && node.Available)
                 {
                     stage = $"picking {carried + 1}/{carryCapacity}";
-                    yield return new WaitForSeconds(gatherSeconds);
+                    yield return gatherWait;
                     carried += node.Take(1);
                 }
                 ReleaseSpot();
@@ -436,6 +585,7 @@ namespace SporeTribal.Villagers
             bool performing = order.Kind == OrderKind.Perform;
             stage = performing ? "to the stage" : "gathering to watch";
             yield return WalkTo(order.Point);
+            if (agent.isOnNavMesh) agent.ResetPath();
             stage = performing ? "performing" : "watching";
             while (true) yield return null;
         }
@@ -462,7 +612,8 @@ namespace SporeTribal.Villagers
 
         private void OnDamaged(GameObject source)
         {
-            StartCoroutine(Flash());
+            Flash();
+            feedback.Fighting();
             if (Home != null) Home.ReportAttack(transform.position, source != null && source.GetComponent<VillagerUnit>() is VillagerUnit hitBy ? hitBy.Home : null);
             if (!IsAlive || mourning || source == null) return;
             if (!(source.GetComponent<VillagerUnit>() is VillagerUnit attacker) || !attacker.IsAlive || Home == null || !Home.IsHostileTo(attacker.Home)) return;
@@ -500,7 +651,7 @@ namespace SporeTribal.Villagers
                     Vector3 away = transform.position - target.transform.position;
                     away.y = 0f;
                     agent.SetDestination(target.transform.position + away.normalized * (attackRange * 0.8f));
-                    yield return new WaitForSeconds(RepathSeconds);
+                    yield return RepathWait;
                     continue;
                 }
 
@@ -513,11 +664,7 @@ namespace SporeTribal.Villagers
                     continue;
                 }
                 nextSwingTime = Time.time + AttackCooldown;
-                VillagerUnit victim = target;
-                yield return Swing(victim.transform, () =>
-                {
-                    if (CanStrike(victim) && InReach(victim, attackRange + 0.5f)) victim.Health.Damage(Damage, gameObject);
-                });
+                yield return Swing(target, null);
             }
 
             TribalOrder? resume = resumeOrder;
@@ -548,10 +695,7 @@ namespace SporeTribal.Villagers
                     continue;
                 }
                 nextSwingTime = Time.time + AttackCooldown;
-                yield return Swing(building.transform, () =>
-                {
-                    if (building != null && building.IsStanding) building.Health.Damage(RazeDamage, gameObject);
-                });
+                yield return Swing(null, building);
             }
 
             ReleaseSpot();
@@ -560,31 +704,44 @@ namespace SporeTribal.Villagers
             stage = null;
         }
 
-        private IEnumerator Swing(Transform target, System.Action strike)
+        private WaitForSeconds Swing(VillagerUnit victim, Building structure)
         {
+            if (swingTween.isAlive) swingTween.Complete();
             stage = "attacking";
-            float peak = Mathf.Max(1f, MaxKeyValue(swingCurve));
-            float lunged = 0f;
-            bool struck = false;
-            for (float t = 0f; t < swingSeconds; t += Time.deltaTime)
+            swingVictim = victim;
+            swingStructure = structure;
+            swingPeak = Mathf.Max(1f, MaxKeyValue(swingCurve));
+            swingLunged = 0f;
+            swingStruck = false;
+            swingTween = Tween.Custom(this, 0f, 1f, swingSeconds, static (unit, n) => unit.SwingStep(n), Ease.Linear)
+                .OnComplete(this, static unit => unit.EndSwing());
+            return swingWait;
+        }
+
+        private void SwingStep(float n)
+        {
+            float angle = swingCurve.Evaluate(n);
+            PoseTool(angle);
+
+            float lunge = Mathf.Clamp01(angle / swingPeak) * lungeDistance;
+            if (agent.enabled) agent.Move(transform.forward * (lunge - swingLunged));
+            swingLunged = lunge;
+
+            Transform aim = swingVictim != null ? swingVictim.transform : swingStructure != null ? swingStructure.transform : null;
+            if (aim != null) Face(aim.position);
+            if (swingStruck || n < hitMoment) return;
+            swingStruck = true;
+            if (swingVictim != null)
             {
-                float n = t / swingSeconds;
-                float angle = swingCurve.Evaluate(n);
-                PoseTool(angle);
-
-                float lunge = Mathf.Clamp01(angle / peak) * lungeDistance;
-                if (agent.enabled) agent.Move(transform.forward * (lunge - lunged));
-                lunged = lunge;
-
-                if (target != null) Face(target.position);
-                if (!struck && n >= hitMoment)
-                {
-                    struck = true;
-                    strike();
-                }
-                yield return null;
+                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + 0.5f)) swingVictim.Health.Damage(Damage, gameObject);
             }
-            if (agent.enabled) agent.Move(-transform.forward * lunged);
+            else if (swingStructure != null && swingStructure.IsStanding) swingStructure.Health.Damage(RazeDamage, gameObject);
+        }
+
+        private void EndSwing()
+        {
+            if (agent.enabled) agent.Move(-transform.forward * swingLunged);
+            swingLunged = 0f;
             RestTool();
         }
 
@@ -604,12 +761,12 @@ namespace SporeTribal.Villagers
 
         private void RestTool() => PoseTool(0f);
 
-        private void Face(Vector3 point)
+        private void Face(Vector3 point, float yaw = 0f)
         {
             Vector3 to = point - transform.position;
             to.y = 0f;
             if (to.sqrMagnitude < 0.0001f) return;
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(to), agent.angularSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(Quaternion.Euler(0f, yaw, 0f) * to), agent.angularSpeed * Time.deltaTime);
         }
 
         private bool InReach(VillagerUnit other, float range)
@@ -668,12 +825,15 @@ namespace SporeTribal.Villagers
             Cancel();
             SetSelected(false);
             gameObject.SetActive(false);
+            rig.gameObject.SetActive(false);
         }
 
         public void Unshelter(Vector3 at)
         {
             transform.position = at;
             gameObject.SetActive(true);
+            rig.gameObject.SetActive(true);
+            rig.Follow();
             agent.Warp(at);
             SetBodyColour(Home != null ? Home.TribeColour : hitFlashColour);
             if (Home == null) return;
@@ -712,33 +872,24 @@ namespace SporeTribal.Villagers
             enabled = false;
             agent.enabled = false;
             foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
-            StartCoroutine(Topple());
+            Topple();
         }
 
-        private IEnumerator Topple()
+        private void Topple()
         {
-            Quaternion from = transform.rotation;
-            Quaternion to = from * Quaternion.Euler(90f, 0f, 0f);
-            Vector3 start = transform.position;
-            for (float t = 0f; t < 1f; t += Time.deltaTime / 0.4f)
-            {
-                transform.SetPositionAndRotation(start + Vector3.down * (0.6f * t), Quaternion.Slerp(from, to, t * t));
-                yield return null;
-            }
-            yield return new WaitForSeconds(1.5f);
-            for (float t = 0f; t < 1f; t += Time.deltaTime)
-            {
-                transform.position += Vector3.down * Time.deltaTime;
-                yield return null;
-            }
-            Destroy(gameObject);
+            float y = transform.position.y;
+            Sequence.Create()
+                .Group(Tween.Rotation(transform, transform.rotation * Quaternion.Euler(90f, 0f, 0f), 0.4f, Ease.InQuad))
+                .Group(Tween.PositionY(transform, y - 0.6f, 0.4f, Ease.Linear))
+                .ChainDelay(1.5f)
+                .Chain(Tween.PositionY(transform, y - 1.6f, 1f, Ease.Linear))
+                .ChainCallback(gameObject, static go => Destroy(go));
         }
 
-        private IEnumerator Flash()
+        private void Flash()
         {
             SetBodyColour(hitFlashColour);
-            yield return new WaitForSeconds(0.08f);
-            SetBodyColour(Home != null ? Home.TribeColour : hitFlashColour);
+            Tween.Delay(this, 0.08f, static unit => unit.SetBodyColour(unit.Home != null ? unit.Home.TribeColour : unit.hitFlashColour));
         }
 
         private void TintHeadgear()

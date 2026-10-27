@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="PerformanceHud.uss"/>
+    <ui:VisualElement name="perf-root" class="perf">
+        <ui:Label name="perf-banner" class="perf__banner"/>
+        <ui:Label name="perf-relationship" class="perf__relationship"/>
+        <ui:VisualElement name="perf-tray" class="perf__tray">
+            <ui:VisualElement name="perf-meter" class="perf__meter">
+                <ui:VisualElement name="perf-meter-fill" class="perf__meter-fill"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="perf-buttons" class="perf__buttons"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="perf-balloon" class="perf__balloon">
+            <ui:VisualElement name="perf-balloon-icon" class="perf__balloon-icon"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,3 +1,4 @@
+using SporeTribal.Definitions;
 using UnityEngine;
 
 namespace SporeTribal.Economy
@@ -45,6 +46,10 @@ namespace SporeTribal.Economy
         [Tooltip("Relationship gained for a gift of 100 food or more.")]
         [SerializeField, Min(0)] private int largeGiftBoost = 30;
         [SerializeField, Min(0)] private float soothingSongSeconds = 60f;
+        [Tooltip("Instruments this tribe asks for during a recital. The first tribe only knows the didgeridoo; later tribes add more. A recital never asks for an instrument the band does not hold.")]
+        [SerializeField] private InstrumentKind[] calledInstruments = { InstrumentKind.Didgeridoo };
+
+        public System.Collections.Generic.IReadOnlyList<InstrumentKind> CalledInstruments => calledInstruments;
 
         private readonly System.Collections.Generic.HashSet<Village> allies = new System.Collections.Generic.HashSet<Village>();
         private float soothedUntil;

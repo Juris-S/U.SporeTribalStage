@@ -395,7 +395,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51f99085b0f7c9c4cb5cd9c21ad47b4b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Villagers.VillagerUnit
-  selectionRing: {fileID: 746417529233186942}
+  markerRing: {fileID: 746417529233186942}
+  talkRim: {r: 0.3, g: 1, b: 0.3, a: 0.9}
+  talkFill: {r: 0.3, g: 1, b: 0.3, a: 0.12}
   isChieftain: 0
   chieftainHeadgear: {fileID: 5925726475331779873}
   headgearTribeParts:
@@ -406,7 +408,7 @@ MonoBehaviour:
   conductorBaton: {fileID: 11400000, guid: ff80302961721ed42b0396a3c0b8adc8, type: 2}
   hand: {fileID: 3554257888376844273}
   movementVariance: 0.05
-  idleGlanceInterval: {x: 4, y: 10}
+  idleGlanceInterval: {x: 10, y: 24}
   idleTurnSpeed: 90
   gatherSeconds: 1.5
   carryCapacity: 10

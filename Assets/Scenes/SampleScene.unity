@@ -150,9 +150,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Villagers.VillagerSpawner
   prefab: {fileID: 4316238543952936551, guid: 2d91e97b38256714bacf762199e357ef, type: 3}
   village: {fileID: 429429937}
-  count: 6
+  regulars: 2
   spacing: 3
-  firstIsConductor: 1
 --- !u!4 &40150531
 Transform:
   m_ObjectHideFlags: 0
@@ -1264,6 +1263,7 @@ MonoBehaviour:
   smallGiftBoost: 20
   largeGiftBoost: 30
   soothingSongSeconds: 60
+  calledInstruments: 03000000i
 --- !u!65 &429429939
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4414,6 +4414,7 @@ MonoBehaviour:
   smallGiftBoost: 20
   largeGiftBoost: 30
   soothingSongSeconds: 60
+  calledInstruments: 03000000i
 --- !u!4 &1424161962
 Transform:
   m_ObjectHideFlags: 0
@@ -4748,6 +4749,7 @@ GameObject:
   - component: {fileID: 1808637047}
   - component: {fileID: 1808637049}
   - component: {fileID: 1808637048}
+  - component: {fileID: 1808637050}
   m_Layer: 0
   m_Name: RTS Systems
   m_TagString: Untagged
@@ -4998,6 +5000,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cb150edf75614361bcc7333962fcdf7c, type: 2}
   failClip: {fileID: 0}
   stageDistance: 5
+  crowdReach: 0.8
+  noticeDistance: 8
+  approachTimeout: 45
   bandRadius: 2.2
   bandArc: 120
   audienceRadius: 2.5
@@ -5005,6 +5010,7 @@ MonoBehaviour:
   musterTimeout: 20
   callSeconds: 5
   pauseSeconds: 1.5
+  playSeconds: 4
   startProgress: 0.35
   baseIncrement: 0.25
   failPenalty: 0.15
@@ -5040,7 +5046,8 @@ MonoBehaviour:
   input: {fileID: 1808637038}
   heightAboveCaller: 3
   bannerSeconds: 4
-  meterColour: {r: 0.95, g: 0.75, b: 0.2, a: 1}
+  meterSeconds: 0.45
+  idleTint: {r: 1, g: 1, b: 1, a: 0.35}
 --- !u!114 &1808637049
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5059,6 +5066,29 @@ MonoBehaviour:
   didgeridooKey: 43
   giftKey: 21
   soothingSongKey: 22
+--- !u!114 &1808637050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808637033}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: 856be2a8424403b428a31741041d1ec3, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: 752626aee40aec845a42538805c41a2c, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
 --- !u!1001 &1855044381
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5748,9 +5778,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Villagers.VillagerSpawner
   prefab: {fileID: 4316238543952936551, guid: 2d91e97b38256714bacf762199e357ef, type: 3}
   village: {fileID: 1424161961}
-  count: 6
+  regulars: 2
   spacing: 3
-  firstIsConductor: 0
 --- !u!4 &2007474177
 Transform:
   m_ObjectHideFlags: 0

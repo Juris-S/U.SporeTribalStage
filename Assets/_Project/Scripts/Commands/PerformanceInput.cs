@@ -22,13 +22,21 @@ namespace SporeTribal.Commands
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null) return;
 
-            if (keyboard[hornKey].wasPressedThisFrame) director.Submit(InstrumentKind.Horn);
-            if (keyboard[maracaKey].wasPressedThisFrame) director.Submit(InstrumentKind.Maraca);
-            if (keyboard[didgeridooKey].wasPressedThisFrame) director.Submit(InstrumentKind.Didgeridoo);
+            if (director.Current == SocialPerformanceDirector.State.Calling)
+            {
+                if (keyboard[hornKey].wasPressedThisFrame) SubmitHeld(InstrumentKind.Horn);
+                if (keyboard[maracaKey].wasPressedThisFrame) SubmitHeld(InstrumentKind.Maraca);
+                if (keyboard[didgeridooKey].wasPressedThisFrame) SubmitHeld(InstrumentKind.Didgeridoo);
+            }
             if (keyboard[giftKey].wasPressedThisFrame && !director.Gift(keyboard.shiftKey.isPressed))
                 Debug.Log("[Diplomacy] Gift not sent: not enough food or no rival set.");
             if (keyboard[soothingSongKey].wasPressedThisFrame && !director.SingSoothingSong())
                 Debug.Log("[Diplomacy] The soothing song needs a living chieftain.");
+        }
+
+        private void SubmitHeld(InstrumentKind kind)
+        {
+            if (director.MatchingCount(kind) > 0) director.Submit(kind);
         }
     }
 }

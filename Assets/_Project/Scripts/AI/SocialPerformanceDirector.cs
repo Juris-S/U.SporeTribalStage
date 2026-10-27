@@ -4,13 +4,12 @@ using SporeTribal.Economy;
 using SporeTribal.Orders;
 using SporeTribal.Villagers;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace SporeTribal.AI
 {
     public class SocialPerformanceDirector : MonoBehaviour
     {
-        public enum State { Idle, Approaching, Mustering, Waiting, Calling }
+        public enum State { Idle, Approaching, Mustering, Waiting, Calling, Playing }
         public enum Outcome { Allied, Pleased, Disappointed, Interrupted }
 
         [System.Serializable]
@@ -32,17 +31,9 @@ namespace SporeTribal.AI
         [SerializeField] private AudioClip failClip;
 
         [Header("Stage")]
-        [Tooltip("Metres between the chieftain and the audience centre.")]
-        [SerializeField] private float stageDistance = 5f;
-        [Tooltip("How far out the crowd comes to meet the band, as a fraction of their village's wander radius, so they never leave home.")]
-        [SerializeField, Range(0f, 1f)] private float crowdReach = 0.8f;
-        [Tooltip("The crowd notices the chieftain this many metres beyond the meeting point and walks out to meet the band.")]
-        [SerializeField] private float noticeDistance = 8f;
+        [SerializeField] private PerformanceStage stage = new PerformanceStage();
         [Tooltip("If the band is still on its way after this many seconds, the crowd meets it wherever the chieftain is.")]
         [SerializeField] private float approachTimeout = 45f;
-        [SerializeField] private float bandRadius = 2.2f;
-        [SerializeField] private float bandArc = 120f;
-        [SerializeField] private float audienceRadius = 2.5f;
         [SerializeField] private int maxAudience = 6;
         [Tooltip("The recital starts once everyone is in place, or after this many seconds.")]
         [SerializeField] private float musterTimeout = 20f;
@@ -50,6 +41,8 @@ namespace SporeTribal.AI
         [Header("Rounds")]
         [SerializeField] private float callSeconds = 5f;
         [SerializeField] private float pauseSeconds = 1.5f;
+        [Tooltip("How long the band plays its answer before the crowd reacts to it.")]
+        [SerializeField] private float playSeconds = 4f;
         [Tooltip("Where the friendship meter starts, so a few mistakes end the recital.")]
         [SerializeField, Range(0f, 0.9f)] private float startProgress = 0.35f;
         [Tooltip("Meter gained by one musician answering correctly. Each extra matching musician adds 50%.")]
@@ -72,13 +65,18 @@ namespace SporeTribal.AI
         private readonly List<VillagerUnit> band = new List<VillagerUnit>();
         private readonly List<VillagerUnit> audience = new List<VillagerUnit>();
         private readonly List<VillagerUnit> candidates = new List<VillagerUnit>();
+        private VillagerUnit contact;
         private TierTuning tuning;
-        private Vector3 audienceCentre;
-        private Vector3 stagePoint;
-        private Vector3 toBand;
         private float stateUntil;
         private float callEnd;
         private float callLength = 1f;
+        private InstrumentKind played;
+        private int playedBy;
+        private float playEnd;
+        public float PlayRemaining => Current == State.Playing ? Mathf.Max(0f, playEnd - Time.time) : 0f;
+        public float ProjectedProgress => Current == State.Playing && played == Demanded
+            ? Mathf.Clamp01(Progress + baseIncrement * (1f + 0.5f * (playedBy - 1)) * tuning.gain)
+            : Progress;
 
         public Village Village => village;
         public Village Rival => rival;
@@ -113,7 +111,7 @@ namespace SporeTribal.AI
             return count;
         }
 
-        public RefusalReason TryBegin(IReadOnlyList<VillagerUnit> performers, Village target)
+        public RefusalReason TryBegin(IReadOnlyList<VillagerUnit> performers, Village target, VillagerUnit contact = null)
         {
             if (target == null || target.HasSurrendered) return RefusalReason.TargetGone;
             if (IsActive && target == Target) return Join(performers);
@@ -136,8 +134,8 @@ namespace SporeTribal.AI
 
             Vector3 mean = Vector3.zero;
             foreach (VillagerUnit unit in band) mean += unit.transform.position;
-            Stage(mean / band.Count);
-            PlaceBand();
+            stage.Set(target, mean / band.Count);
+            stage.PlaceBand(band, Target);
             foreach (VillagerUnit unit in band) unit.Health.Damaged += OnBandHit;
             target.Attacked += OnTargetAttacked;
 
@@ -145,6 +143,8 @@ namespace SporeTribal.AI
             Progress = startProgress;
             Current = State.Approaching;
             stateUntil = Time.time + approachTimeout;
+            this.contact = contact;
+            if (contact != null) contact.SetTalkTarget(true);
             Started?.Invoke(target);
             return RefusalReason.None;
         }
@@ -157,20 +157,8 @@ namespace SporeTribal.AI
                 band.Add(unit);
                 unit.Health.Damaged += OnBandHit;
             }
-            PlaceBand();
+            stage.PlaceBand(band, Target);
             return RefusalReason.None;
-        }
-
-        private void Stage(Vector3 from)
-        {
-            Vector3 centre = Target.DropOffCentre;
-            toBand = from - centre;
-            toBand.y = 0f;
-            float distance = toBand.magnitude;
-            toBand = distance < 0.1f ? Vector3.back : toBand / distance;
-            float reach = Mathf.Clamp(distance - stageDistance, 0f, Target.WanderRadius * crowdReach);
-            audienceCentre = OnNavMesh(centre + toBand * reach);
-            stagePoint = audienceCentre + toBand * stageDistance;
         }
 
         private int FindCrowd(Village target)
@@ -184,59 +172,31 @@ namespace SporeTribal.AI
         private bool Noticed(VillagerUnit chieftain)
         {
             if (Time.time >= stateUntil || !chieftain.IsMoving) return true;
-            Vector3 to = chieftain.transform.position - Target.DropOffCentre;
-            to.y = 0f;
-            float notice = Target.WanderRadius * crowdReach + stageDistance + noticeDistance;
-            return to.sqrMagnitude <= notice * notice;
+            return stage.IsNoticedFrom(Target, chieftain.transform.position);
         }
 
         private void Meet(VillagerUnit chieftain)
         {
-            Stage(chieftain.transform.position);
+            stage.Set(Target, chieftain.transform.position);
             if (FindCrowd(Target) == 0)
             {
                 End(Outcome.Interrupted);
                 return;
             }
-            candidates.Sort((a, b) => (a.transform.position - audienceCentre).sqrMagnitude.CompareTo((b.transform.position - audienceCentre).sqrMagnitude));
-            for (int i = 0; i < Mathf.Min(maxAudience, candidates.Count); i++) audience.Add(candidates[i]);
+            candidates.Sort((a, b) => stage.SqrDistanceToAudience(a.transform.position).CompareTo(stage.SqrDistanceToAudience(b.transform.position)));
+            VillagerUnit leader = candidates.Find(unit => unit.IsChieftain);
+            if (leader != null) candidates.Remove(leader);
+            for (int i = 0; i < Mathf.Min(maxAudience - (leader != null ? 1 : 0), candidates.Count); i++) audience.Add(candidates[i]);
+            if (leader != null) audience.Insert(audience.Count / 2, leader);
+            if (contact != null && !audience.Contains(contact)) contact.SetTalkTarget(false);
+            contact = null;
+            foreach (VillagerUnit unit in audience) unit.SetTalkTarget(true);
 
-            PlaceBand();
-            PlaceAudience();
+            stage.PlaceBand(band, Target);
+            stage.PlaceAudience(audience);
             Current = State.Mustering;
             stateUntil = Time.time + musterTimeout;
         }
-
-        private void PlaceBand()
-        {
-            int musicians = 0;
-            foreach (VillagerUnit unit in band) if (!unit.IsChieftain) musicians++;
-            int placed = 0;
-            foreach (VillagerUnit unit in band)
-            {
-                Vector3 slot = stagePoint;
-                if (!unit.IsChieftain)
-                {
-                    float t = musicians < 2 ? 0.5f : (float)placed / (musicians - 1);
-                    slot = stagePoint + Quaternion.AngleAxis(Mathf.Lerp(-bandArc * 0.5f, bandArc * 0.5f, t), Vector3.up) * toBand * bandRadius;
-                    placed++;
-                }
-                unit.Accept(TribalOrder.Perform(Target, OnNavMesh(slot), audienceCentre));
-            }
-        }
-
-        private void PlaceAudience()
-        {
-            for (int i = 0; i < audience.Count; i++)
-            {
-                float t = audience.Count < 2 ? 0.5f : (float)i / (audience.Count - 1);
-                Vector3 slot = audienceCentre + Quaternion.AngleAxis(Mathf.Lerp(-90f, 90f, t), Vector3.up) * toBand * audienceRadius;
-                audience[i].Accept(TribalOrder.Watch(OnNavMesh(slot), stagePoint));
-            }
-        }
-
-        private static Vector3 OnNavMesh(Vector3 slot) =>
-            NavMesh.SamplePosition(slot, out NavMeshHit hit, 3f, NavMesh.AllAreas) ? hit.position : slot;
 
         private TierTuning TuningFor(RelationshipTier tier) => tier switch
         {
@@ -267,6 +227,9 @@ namespace SporeTribal.AI
                 case State.Calling:
                     if (Time.time >= callEnd) Fail();
                     break;
+                case State.Playing:
+                    if (Time.time >= playEnd) Resolve();
+                    break;
             }
         }
 
@@ -280,7 +243,12 @@ namespace SporeTribal.AI
         private void Prune()
         {
             band.RemoveAll(unit => unit == null || !unit.IsAlive || !unit.IsAttending);
-            audience.RemoveAll(unit => unit == null || !unit.IsAlive || !unit.IsAttending);
+            audience.RemoveAll(unit =>
+            {
+                bool gone = unit == null || !unit.IsAlive || !unit.IsAttending;
+                if (gone && unit != null) unit.SetTalkTarget(false);
+                return gone;
+            });
             bool crowdGone = Current != State.Approaching && audience.Count == 0;
             if (Target == null || Target.HasSurrendered || crowdGone || Chieftain() == null || !HasInstrument())
                 End(Outcome.Interrupted);
@@ -306,30 +274,66 @@ namespace SporeTribal.AI
 
         private void StartCall()
         {
-            Demanded = (InstrumentKind)Random.Range(1, 4);
+            Demanded = PickDemand();
             Caller = audience[Random.Range(0, audience.Count)];
             callLength = callSeconds * tuning.time;
             callEnd = Time.time + callLength;
             Current = State.Calling;
             Play(ToolFor(Demanded)?.CallClip, Caller.transform.position);
+            Caller.Excited();
             CallStarted?.Invoke(Demanded, Caller);
+        }
+
+        private InstrumentKind PickDemand()
+        {
+            var called = Target.CalledInstruments;
+            int playable = 0;
+            foreach (InstrumentKind kind in called) if (MatchingCount(kind) > 0) playable++;
+            if (playable > 0)
+            {
+                int pick = Random.Range(0, playable);
+                foreach (InstrumentKind kind in called)
+                    if (MatchingCount(kind) > 0 && pick-- == 0) return kind;
+            }
+            foreach (VillagerUnit unit in band)
+                if (!unit.IsChieftain && unit.Tool != null && unit.Tool.IsInstrument) return unit.Tool.Instrument;
+            return called.Count > 0 ? called[0] : InstrumentKind.Didgeridoo;
         }
 
         public void Submit(InstrumentKind kind)
         {
             if (Current != State.Calling || kind == InstrumentKind.None) return;
             int matching = MatchingCount(kind);
-            if (kind == Demanded && matching > 0) Succeed(matching);
+            if (matching == 0)
+            {
+                Fail();
+                return;
+            }
+            played = kind;
+            playedBy = matching;
+            playEnd = Time.time + playSeconds;
+            Current = State.Playing;
+            bool liked = kind == Demanded;
+            foreach (VillagerUnit unit in band)
+            {
+                if (unit.IsChieftain || (unit.Tool != null && unit.Tool.Instrument == kind)) unit.Bounce(playSeconds, 0.15f, true);
+                else if (liked) unit.Dance(playSeconds, true);
+            }
+            Play(ToolFor(kind)?.ResponseClip, Chieftain().transform.position);
+            foreach (VillagerUnit unit in audience) unit.Dance(playSeconds, liked);
+        }
+
+        private void Resolve()
+        {
+            if (played == Demanded) Succeed(playedBy);
             else Fail();
         }
 
         private void Succeed(int matching)
         {
             Progress = Mathf.Clamp01(Progress + baseIncrement * (1f + 0.5f * (matching - 1)) * tuning.gain);
-            foreach (VillagerUnit unit in band)
-                if (unit.IsChieftain || (unit.Tool != null && unit.Tool.Instrument == Demanded)) unit.Bounce(0.8f, 0.15f, true);
-            foreach (VillagerUnit unit in audience) unit.Bounce(0.6f, 0.2f, false);
-            Play(ToolFor(Demanded)?.ResponseClip, Caller.transform.position);
+            foreach (VillagerUnit unit in audience)
+                unit.Happy();
             Answered?.Invoke(true, Demanded);
             Caller = null;
 
@@ -356,8 +360,16 @@ namespace SporeTribal.AI
 
         private void Finish()
         {
-            foreach (VillagerUnit unit in band) unit.Bounce(1.2f, 0.3f, true);
-            foreach (VillagerUnit unit in audience) unit.Bounce(1.2f, 0.3f, false);
+            foreach (VillagerUnit unit in band)
+            {
+                unit.Bounce(1.2f, 0.3f, true);
+                unit.Excited();
+            }
+            foreach (VillagerUnit unit in audience)
+            {
+                unit.Bounce(1.2f, 0.3f, false);
+                unit.Excited();
+            }
             End(Outcome.Pleased);
         }
 
@@ -375,7 +387,14 @@ namespace SporeTribal.AI
                 unit.Release(false);
             }
             if (target != null) target.Attacked -= OnTargetAttacked;
-            foreach (VillagerUnit unit in audience) if (unit != null) unit.Release(true);
+            foreach (VillagerUnit unit in audience)
+            {
+                if (unit == null) continue;
+                unit.SetTalkTarget(false);
+                unit.Release(true);
+            }
+            if (contact != null) contact.SetTalkTarget(false);
+            contact = null;
 
             if (target != null)
             {

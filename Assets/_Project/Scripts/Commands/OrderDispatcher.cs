@@ -40,11 +40,15 @@ namespace SporeTribal.Commands
                     else movers.Add(unit);
                 }
                 else if (result.Order.Value.Kind == OrderKind.Move) movers.Add(unit);
-                else unit.Accept(result.Order.Value);
+                else
+                {
+                    unit.Accept(result.Order.Value);
+                    if (performances != null && result.Order.Value.Kind == OrderKind.Attack && result.Order.Value.Target != null) result.Order.Value.Target.SetAttackTarget(true);
+                }
             }
 
             if (movers.Count > 0) MoveInFormation(movers, target.Point);
-            if (performers.Count > 0) batch.GroupRefusal = performances.TryBegin(performers, audience);
+            if (performers.Count > 0) batch.GroupRefusal = performances.TryBegin(performers, audience, target.Unit);
             return batch;
         }
 
