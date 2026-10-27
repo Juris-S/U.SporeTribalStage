@@ -1,4 +1,4 @@
-using System.Collections;
+using PrimeTween;
 using UnityEngine;
 
 namespace SporeTribal.Feedback
@@ -13,36 +13,31 @@ namespace SporeTribal.Feedback
         [SerializeField] private float lift = 0.03f;
 
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
+        private static MaterialPropertyBlock block;
 
-        public void Play(Vector3 point) => StartCoroutine(Animate(point));
-
-        private IEnumerator Animate(Vector3 point)
+        public void Play(Vector3 point)
         {
+            block ??= new MaterialPropertyBlock();
             GameObject ping = GameObject.CreatePrimitive(PrimitiveType.Quad);
             Destroy(ping.GetComponent<Collider>());
             ping.name = "ClickPing";
             ping.transform.SetPositionAndRotation(point + Vector3.up * lift, Quaternion.Euler(90f, 0f, 0f));
+            ping.transform.localScale = Vector3.one * startSize;
 
             MeshRenderer ring = ping.GetComponent<MeshRenderer>();
             ring.sharedMaterial = material;
             ring.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             ring.receiveShadows = false;
+            block.SetColor(RimColorId, color);
+            ring.SetPropertyBlock(block);
 
-            MaterialPropertyBlock block = new MaterialPropertyBlock();
-            for (float t = 0f; t < duration; t += Time.deltaTime)
+            Tween.Scale(ping.transform, startSize, endSize, duration, Ease.OutCubic);
+            Tween.Custom(ring, color, new TweenSettings<float>(0f, 1f, duration, Ease.Linear), static (r, c, k) =>
             {
-                float k = t / duration;
-                float eased = 1f - (1f - k) * (1f - k) * (1f - k);
-                ping.transform.localScale = Vector3.one * Mathf.Lerp(startSize, endSize, eased);
-
-                Color c = color;
                 c.a *= 1f - k * k;
                 block.SetColor(RimColorId, c);
-                ring.SetPropertyBlock(block);
-                yield return null;
-            }
-
-            Destroy(ping);
+                r.SetPropertyBlock(block);
+            }).OnComplete(ping, static p => Destroy(p));
         }
     }
 }

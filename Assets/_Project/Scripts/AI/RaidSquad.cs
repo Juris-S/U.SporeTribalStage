@@ -62,7 +62,7 @@ namespace SporeTribal.AI
 
                 ToolDefinition tool = loadout[unit];
                 ToolBuilding armoury = ToolBuilding.Find(home, tool);
-                bool canArm = armoury != null && unit.Tool != tool && home.Food >= tool.Cost;
+                bool canArm = !unit.IsChieftain && armoury != null && unit.Tool != tool && home.Food >= tool.Cost;
                 if (canArm) dispatcher.Issue(new[] { unit }, ClickTarget.AtBuilding(armoury, armoury.transform.position));
                 else
                 {

@@ -1,4 +1,6 @@
+using SporeTribal.AI;
 using SporeTribal.Buildings;
+using SporeTribal.Definitions;
 using SporeTribal.Economy;
 using SporeTribal.Inputs;
 using SporeTribal.Selection;
@@ -34,6 +36,7 @@ namespace SporeTribal.UI
         private const float HutCloseDelay = 0.3f;
 
         private SelectionController selection;
+        private SocialPerformanceDirector director;
         private MainHut hut;
         private bool hutOpen;
         private float hutCloseAt;
@@ -125,11 +128,11 @@ namespace SporeTribal.UI
 
         private void DrawDebug()
         {
-            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 2 + Margin);
+            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 3 + Margin);
             GUI.Box(debugPanel, GUIContent.none);
 
             float y = debugPanel.y + 6f;
-            GUI.Label(new Rect(debugPanel.x + 6f, y, DebugWidth - 12f, Row - 4f), $"Debug food ({debugToggleKey} hides)");
+            GUI.Label(new Rect(debugPanel.x + 6f, y, DebugWidth - 12f, Row - 4f), $"Debug ({debugToggleKey} hides)");
             y += Row;
 
             float w = (DebugWidth - 12f) / (debugFoodAmounts.Length + 1);
@@ -138,6 +141,47 @@ namespace SporeTribal.UI
                     village.Deposit(debugFoodAmounts[i]);
             if (GUI.Button(new Rect(debugPanel.x + 6f + w * debugFoodAmounts.Length, y, w - 4f, Row - 4f), "Zero"))
                 village.TrySpend(village.Food);
+            y += Row;
+
+            float half = (DebugWidth - 12f) / 2f;
+            if (GUI.Button(new Rect(debugPanel.x + 6f, y, half - 4f, Row - 4f), "Equip band")) DebugEquipBand();
+            if (GUI.Button(new Rect(debugPanel.x + 6f + half, y, half - 4f, Row - 4f), "Go to rival")) DebugWarpToRival();
+        }
+
+        private static readonly InstrumentKind[] DebugHandout = { InstrumentKind.Didgeridoo, InstrumentKind.Horn, InstrumentKind.Maraca };
+
+        private void DebugEquipBand()
+        {
+            if (director == null) director = FindAnyObjectByType<SocialPerformanceDirector>();
+            if (director == null) return;
+            int given = 0;
+            foreach (VillagerUnit unit in VillagerUnit.All)
+            {
+                if (unit.Home != village || !unit.IsAlive || unit.IsChieftain) continue;
+                ToolDefinition tool = director.ToolFor(DebugHandout[given++ % DebugHandout.Length]);
+                if (tool != null) unit.Equip(tool);
+            }
+        }
+
+        private void DebugWarpToRival()
+        {
+            if (director == null) director = FindAnyObjectByType<SocialPerformanceDirector>();
+            Village rival = director != null ? director.Rival : null;
+            if (rival == null) return;
+            Vector3 away = village.DropOffCentre - rival.DropOffCentre;
+            away.y = 0f;
+            away = away.sqrMagnitude < 0.01f ? Vector3.back : away.normalized;
+            Vector3 side = Vector3.Cross(Vector3.up, away);
+            Vector3 spot = rival.DropOffCentre + away * (rival.WanderRadius + 14f);
+
+            int placed = 0;
+            foreach (VillagerUnit unit in VillagerUnit.All)
+            {
+                if (unit.Home != village || !unit.IsAlive) continue;
+                Vector3 slot = spot + side * ((placed++ - 3) * 1.2f);
+                if (NavMesh.SamplePosition(slot, out NavMeshHit hit, 4f, NavMesh.AllAreas)) slot = hit.position;
+                unit.Warp(slot);
+            }
         }
 
         private void Recruit()

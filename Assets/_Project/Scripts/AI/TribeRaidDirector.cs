@@ -148,7 +148,7 @@ namespace SporeTribal.AI
             foreach (VillagerUnit unit in members)
             {
                 if (squad.Count >= Mathf.Min(plan.DesiredMembers, spare)) break;
-                if (!unit.IsAttacking && !Owns(unit)) squad.Add(unit);
+                if (!unit.IsAttacking && !unit.IsAttending && !Owns(unit)) squad.Add(unit);
             }
             if (squad.Count < plan.RequiredMembers)
             {

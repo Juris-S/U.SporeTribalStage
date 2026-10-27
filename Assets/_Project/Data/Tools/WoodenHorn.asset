@@ -19,3 +19,11 @@ MonoBehaviour:
   heldEuler: {x: 0, y: 90, z: 0}
   heldForwardTilt: 15
   heldScale: 1.2
+  damage: 0
+  razeDamage: 0
+  attackCooldown: 2
+  instrument: 1
+  icon: {fileID: 2800000, guid: b184e56ceb5c1d2419e9c2ca11a2b817, type: 3}
+  silhouetteIcon: {fileID: 2800000, guid: 23039f7f646cbcd428c274baa2786625, type: 3}
+  callClip: {fileID: 0}
+  responseClip: {fileID: 0}

@@ -2,7 +2,7 @@ using SporeTribal.Villagers;
 
 namespace SporeTribal.Orders
 {
-    public enum RefusalReason { None, TargetGone, AlreadyEquipped, CannotAfford }
+    public enum RefusalReason { None, TargetGone, AlreadyEquipped, CannotAfford, NeedChieftain, NoInstrument, NoAudience, WarringTribe, ChieftainKeepsStaff }
 
     public readonly struct OrderResult
     {
@@ -28,6 +28,11 @@ namespace SporeTribal.Orders
             RefusalReason.TargetGone => "That target is gone.",
             RefusalReason.AlreadyEquipped => "Already carrying that tool.",
             RefusalReason.CannotAfford => "Not enough food.",
+            RefusalReason.NeedChieftain => "You must bring your chieftain to conduct the band!",
+            RefusalReason.NoInstrument => "Your band needs at least one instrument.",
+            RefusalReason.NoAudience => "There must be at least one tribe member present to socialize.",
+            RefusalReason.WarringTribe => "They are at war with you. Send a gift or sing the soothing song first.",
+            RefusalReason.ChieftainKeepsStaff => "The chieftain keeps their staff and never takes tools.",
             _ => string.Empty
         };
     }

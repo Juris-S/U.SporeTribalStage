@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 428a1175cf95c7d49929a6c8c634dc2b, type: 3}
+  m_Name: ConductorBaton
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Definitions.ToolDefinition
+  displayName: Conductor Baton
+  cost: 0
+  heldModel: {fileID: 5324399151527809685, guid: c3b9b2239d67c314583c1c577388b330, type: 3}
+  heldPosition: {x: 0.55, y: 0, z: 0.1}
+  heldEuler: {x: 0, y: 0, z: 0}
+  heldForwardTilt: 15
+  heldScale: 1
+  damage: 0
+  razeDamage: 0
+  attackCooldown: 2
+  instrument: 0
+  balloonIcon: {fileID: 0}
+  callClip: {fileID: 0}
+  responseClip: {fileID: 0}

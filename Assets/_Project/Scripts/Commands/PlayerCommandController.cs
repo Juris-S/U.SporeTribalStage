@@ -58,6 +58,7 @@ namespace SporeTribal.Commands
         {
             OrderBatch batch = dispatcher.Issue(selection.Selected, target);
             if (batch.AllRefusedReason() is RefusalReason reason) Debug.Log($"[Order] All refused: {reason.Describe()}");
+            else if (batch.GroupRefusal != RefusalReason.None) Debug.Log($"[Order] Performance refused: {batch.GroupRefusal.Describe()}");
         }
     }
 }
