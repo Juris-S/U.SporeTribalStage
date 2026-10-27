@@ -8,7 +8,7 @@ namespace SporeTribal.Debugging
 {
     public class CultureDebugPanel : MonoBehaviour
     {
-        [SerializeField] private bool startVisible = true;
+        [SerializeField] private bool startVisible;
         [SerializeField] private CameraAutoOrbit orbit;
 
         [Header("Keys")]

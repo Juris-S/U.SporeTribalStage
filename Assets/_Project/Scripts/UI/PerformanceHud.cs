@@ -19,6 +19,7 @@ namespace SporeTribal.UI
         [SerializeField] private float bannerSeconds = 4f;
         [SerializeField] private float meterSeconds = 0.45f;
         [SerializeField] private Key hintsToggleKey = Key.F4;
+        [SerializeField] private bool hintsStartVisible;
         [Tooltip("Tint of an instrument's silhouette while it cannot be played.")]
         [SerializeField] private Color idleTint = new Color(1f, 1f, 1f, 0.35f);
 
@@ -64,6 +65,7 @@ namespace SporeTribal.UI
             balloon = root.Q("perf-balloon");
             balloonIcon = root.Q("perf-balloon-icon");
             banner.pickingMode = relationship.pickingMode = balloon.pickingMode = PickingMode.Ignore;
+            relationship.style.display = hintsStartVisible ? DisplayStyle.Flex : DisplayStyle.None;
             BuildButtons(root.Q("perf-buttons"));
 
             director.Ended += OnEnded;
