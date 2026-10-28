@@ -8808,6 +8808,64 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 928b5ca1463cf624f9c72c8e57547d99, type: 3}
   m_PrefabInstance: {fileID: 398356688}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &400937025
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 400937026}
+  - component: {fileID: 400937027}
+  m_Layer: 0
+  m_Name: Match Director
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &400937026
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 400937025}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1546978387}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &400937027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 400937025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f5bd5aff072b33c4e8aa79144c4a3231, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.GameOver
+  player: {fileID: 429429937}
+  slowDownSeconds: 2.5
+  fontSize: 28
+  victoryClips:
+  - {fileID: 8300000, guid: 2b647652a94ba314bad7d6d584820d05, type: 3}
+  - {fileID: 8300000, guid: d6f7d6d5324bd604085680e87128d1f9, type: 3}
+  - {fileID: 8300000, guid: aef78094dae09b14f9f24f892278dd92, type: 3}
+  - {fileID: 8300000, guid: d04577e7157fec44eab76eba3de09097, type: 3}
+  defeatClips:
+  - {fileID: 8300000, guid: 983429d3075242a4ba01d47bfb872652, type: 3}
+  - {fileID: 8300000, guid: d98aec75ab99cb84a971c25c91515fba, type: 3}
+  stingerOutput: {fileID: -8614387164824320970, guid: d003084229d3a51418cf59f25d4701ad, type: 2}
+  stingerFadeIn: 1.5
+  stingerFadeOut: 2
 --- !u!1 &407046893
 GameObject:
   m_ObjectHideFlags: 0
@@ -33236,6 +33294,7 @@ Transform:
   m_Children:
   - {fileID: 1808637039}
   - {fileID: 959000323}
+  - {fileID: 400937026}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1547315937
@@ -39165,6 +39224,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3a4bb409cbfb43f8afa34f3561988ebc, type: 2}
   - {fileID: 11400000, guid: cb150edf75614361bcc7333962fcdf7c, type: 2}
   failClip: {fileID: 0}
+  playEffect: 5
+  playEffectHeight: 1.5
   stage:
     stageDistance: 5
     crowdReach: 0.8

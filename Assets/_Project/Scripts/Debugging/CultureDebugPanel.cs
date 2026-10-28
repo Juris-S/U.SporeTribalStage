@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Text;
 using SporeTribal.CameraControl;
 using SporeTribal.Culture;
+using SporeTribal.Economy;
 using SporeTribal.Villagers;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -52,6 +53,19 @@ namespace SporeTribal.Debugging
                 if (keyboard[activityKeys[i]].wasPressedThisFrame) Trigger(i);
             if (keyboard[hitKey].wasPressedThisFrame) DamageSelected(hitDamage);
             if (keyboard[killKey].wasPressedThisFrame) DamageSelected(int.MaxValue);
+        }
+
+        private void ForceEnd(bool win, bool ally)
+        {
+            var match = FindFirstObjectByType<MatchDirector>();
+            if (match == null) { Report("No MatchDirector component in the scene: add one and assign the player Village"); return; }
+            if (match.IsOver) { Report("Match already over"); return; }
+            if (!win) { match.Player.Surrender(); return; }
+            foreach (Village v in FindObjectsByType<Village>())
+            {
+                if (v == match.Player) continue;
+                if (ally) v.DeclareAlliance(match.Player); else v.Surrender();
+            }
         }
 
         private void DamageSelected(int amount)
@@ -125,6 +139,11 @@ namespace SporeTribal.Debugging
 
             Vector2 size = style.CalcSize(new GUIContent(text.ToString()));
             GUI.Box(new Rect(12f, 12f, size.x, size.y), text.ToString(), style);
+
+            float y = 12f + size.y + 6f;
+            if (GUI.Button(new Rect(12f, y, 110f, 26f), "Win: conquest")) ForceEnd(true, false);
+            if (GUI.Button(new Rect(126f, y, 110f, 26f), "Win: alliance")) ForceEnd(true, true);
+            if (GUI.Button(new Rect(240f, y, 110f, 26f), "Lose")) ForceEnd(false, false);
         }
 
         private static string ActivityLabel(int index)
