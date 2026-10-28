@@ -11,6 +11,8 @@ namespace SporeTribal.Villagers
         [SerializeField, Min(0)] private int regulars = 2;
         [SerializeField] private float spacing = 2f;
 
+        public Village Village => village;
+
         private void Start()
         {
             int total = regulars + 1;

@@ -34,9 +34,11 @@ namespace SporeTribal.Commands
             var performers = new List<VillagerUnit>();
             Village audience = null;
 
+            bool bandCanPerform = OrderResolver.BandCanPerform(units);
+
             foreach (VillagerUnit unit in units)
             {
-                OrderResult result = OrderResolver.Resolve(unit, target);
+                OrderResult result = OrderResolver.Resolve(unit, target, bandCanPerform);
                 batch.Entries.Add(new OrderBatch.Entry(unit, result));
                 if (!result.Accepted) continue;
 

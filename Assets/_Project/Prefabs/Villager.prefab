@@ -371,7 +371,7 @@ NavMeshAgent:
   m_GameObject: {fileID: 4138247052576624928}
   m_Enabled: 1
   m_AgentTypeID: 0
-  m_Radius: 0.5
+  m_Radius: 0.3
   m_Speed: 2.2
   m_Acceleration: 8
   avoidancePriority: 50
@@ -476,7 +476,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Feedback.HealthEffects
   hitEffect: 1
   deathEffect: 2
-  spawnHeight: 1
+  spawnHeight: 0.7
 --- !u!1 &5444937802923814330
 GameObject:
   m_ObjectHideFlags: 0

@@ -8844,8 +8844,10 @@ AudioSource:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 400937025}
   m_Enabled: 1
+  serializedVersion: 4
   OutputAudioMixerGroup: {fileID: -8614387164824320970, guid: d003084229d3a51418cf59f25d4701ad, type: 2}
   m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -8858,10 +8860,196 @@ AudioSource:
   MinDistance: 1
   MaxDistance: 500
   Pan2D: 0
-  rolloffMode: 0
+  rolloffMode: 2
   BypassEffects: 0
   BypassListenerEffects: 0
   BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.2
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.4
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.8
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1.6
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 3.2
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 6.4
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 12.8
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 25.6
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 51.2
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 102.4
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 204.8
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 409.6
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 500
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &407046893
 GameObject:
   m_ObjectHideFlags: 0
@@ -9378,8 +9566,8 @@ MonoBehaviour:
   dropOffRadius: 4.998865
   dropOffPoint: {fileID: 1606940923}
   wanderRadius: 10
-  offencePerHit: 10
   tribeColour: {r: 0.95, g: 0.62, b: 0.18, a: 1}
+  offencePerHit: 10
   smallGiftBoost: 20
   largeGiftBoost: 30
   soothingSongSeconds: 60
@@ -15597,6 +15785,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.ToolBuilding
   owner: {fileID: 429429937}
   standRadius: 5.3287454
+  impactEffect: 6
+  hitPunch: {x: 0.03, y: -0.04, z: 0.03}
+  hitPunchSeconds: 0.2
+  attackRingMargin: 1.5
+  collapseEffect: 2
+  sinkSeconds: 2.5
+  puffInterval: 0.25
+  sinkExtraDepth: 1
   tool: {fileID: 11400000, guid: cb150edf75614361bcc7333962fcdf7c, type: 2}
 --- !u!65 &676683090
 BoxCollider:
@@ -27808,6 +28004,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1266503222}
+  - component: {fileID: 1266503223}
   m_Layer: 0
   m_Name: Rocks
   m_TagString: Untagged
@@ -27920,6 +28117,26 @@ Transform:
   - {fileID: 1764563504}
   m_Father: {fileID: 229550497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1266503223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1266503221}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 1
+  m_Area: 1
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 0
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffffi
 --- !u!1001 &1268985431
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -31049,8 +31266,8 @@ MonoBehaviour:
   dropOffRadius: 4.998865
   dropOffPoint: {fileID: 527548639}
   wanderRadius: 10
-  offencePerHit: 10
   tribeColour: {r: 0.3, g: 0.55, b: 0.95, a: 1}
+  offencePerHit: 10
   smallGiftBoost: 20
   largeGiftBoost: 30
   soothingSongSeconds: 60
@@ -31095,6 +31312,12 @@ MonoBehaviour:
   defendRadius: 18
   sanctuary: {fileID: 1936335806}
   revengeDelay: {x: 15, y: 30}
+  spawner: {fileID: 0}
+  recruitCost: 10
+  maxPopulation: 8
+  recruitSeconds: {x: 20, y: 40}
+  crisisRecruitFactor: 0.4
+  recruitRadius: 2.5
 --- !u!65 &1424161964
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -31138,6 +31361,8 @@ MonoBehaviour:
     rallyPoint: {fileID: 795266653}
     rallyRadius: 4
     timeout: 25
+  opportunisticMaxRelationship: -1
+  outnumberRatio: 1.5
 --- !u!114 &1424161966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -40320,6 +40545,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.ToolBuilding
   owner: {fileID: 429429937}
   standRadius: 4.397103
+  impactEffect: 6
+  hitPunch: {x: 0.03, y: -0.04, z: 0.03}
+  hitPunchSeconds: 0.2
+  attackRingMargin: 1.5
+  collapseEffect: 2
+  sinkSeconds: 2.5
+  puffInterval: 0.25
+  sinkExtraDepth: 1
   tool: {fileID: 11400000, guid: 4387ee2ba3723fb4590f4c574a9fd0fa, type: 2}
 --- !u!65 &1855044385
 BoxCollider:
@@ -41821,6 +42054,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.MainHut
   owner: {fileID: 429429937}
   standRadius: 4.1
+  impactEffect: 6
+  hitPunch: {x: 0.03, y: -0.04, z: 0.03}
+  hitPunchSeconds: 0.2
+  attackRingMargin: 1.5
+  collapseEffect: 2
+  sinkSeconds: 2.5
+  puffInterval: 0.25
+  sinkExtraDepth: 1
 --- !u!114 &1896373350
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41947,6 +42188,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1902046171}
+  - component: {fileID: 1902046172}
   m_Layer: 0
   m_Name: Bushes
   m_TagString: Untagged
@@ -42002,6 +42244,26 @@ Transform:
   - {fileID: 973115446}
   m_Father: {fileID: 229550497}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1902046172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1902046170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 1
+  m_Area: 1
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 0
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffffi
 --- !u!1001 &1902533309
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -42778,6 +43040,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.MainHut
   owner: {fileID: 1424161961}
   standRadius: 5
+  impactEffect: 6
+  hitPunch: {x: 0.03, y: -0.04, z: 0.03}
+  hitPunchSeconds: 0.2
+  attackRingMargin: 1.5
+  collapseEffect: 2
+  sinkSeconds: 2.5
+  puffInterval: 0.25
+  sinkExtraDepth: 1
 --- !u!65 &1936335802
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -45211,6 +45481,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.ToolBuilding
   owner: {fileID: 1424161961}
   standRadius: 4.397103
+  impactEffect: 6
+  hitPunch: {x: 0.03, y: -0.04, z: 0.03}
+  hitPunchSeconds: 0.2
+  attackRingMargin: 1.5
+  collapseEffect: 2
+  sinkSeconds: 2.5
+  puffInterval: 0.25
+  sinkExtraDepth: 1
   tool: {fileID: 11400000, guid: 4387ee2ba3723fb4590f4c574a9fd0fa, type: 2}
 --- !u!65 &2072585369
 BoxCollider:
