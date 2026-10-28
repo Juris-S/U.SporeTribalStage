@@ -1,3 +1,4 @@
+using SporeTribal.Inputs;
 using SporeTribal.Utilities;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -8,18 +9,16 @@ namespace SporeTribal.Buildings
     {
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
 
-        [Tooltip("Extra albedo multiplier at the peak of the pulse (0.35 = 35% brighter).")]
-        [SerializeField] private float peakBrightness = 0.35f;
-        [Tooltip("Seconds for one full breath.")]
-        [SerializeField] private float period = 0.8f;
-        [Tooltip("Seconds for the pulse to fade in on hover and fade out after the mouse leaves.")]
-        [SerializeField] private float fadeTime = 0.35f;
-        [Tooltip("Seconds the hover survives a missed raycast (a villager walking past, a gap between colliders) before fading out.")]
-        [SerializeField] private float lostGrace = 0.15f;
+        [SerializeField] private HoverPulseSettings pulse = new HoverPulseSettings();
+
+        private struct TintedRenderer
+        {
+            public Renderer Renderer;
+            public Color BaseColor;
+        }
 
         private MaterialPropertyBlock block;
-        private Renderer[] renderers;
-        private Color[] baseColors;
+        private TintedRenderer[] tinted = new TintedRenderer[0];
         private Transform active;
         private float phase;
         private float weight;
@@ -29,50 +28,75 @@ namespace SporeTribal.Buildings
 
         private void Update()
         {
-            Transform hit = FindHovered();
-            lostFor = hit != null ? 0f : lostFor + Time.unscaledDeltaTime;
-            Transform target = hit != null || lostFor < lostGrace ? (hit ?? active) : null;
-            if (target != null && target != active)
-            {
-                if (active != null) Apply(0f);
-                active = target;
-                Cache(active);
-                phase = 0f;
-                weight = 0f;
-            }
+            Transform target = HoverTarget(Time.unscaledDeltaTime);
+            if (target != null && target != active) Switch(target);
             if (active == null) return;
 
             float dt = Time.unscaledDeltaTime;
-            phase += dt / period;
-            weight = Mathf.MoveTowards(weight, target != null ? 1f : 0f, dt / fadeTime);
-            Apply(weight * peakBrightness * (0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f)));
+            phase += dt / pulse.Period;
+            weight = Mathf.MoveTowards(weight, target != null ? 1f : 0f, dt / pulse.FadeTime);
+            float breath = 0.5f - 0.5f * Mathf.Cos(phase * Mathf.PI * 2f);
+            Apply(weight * pulse.PeakBrightness * breath);
 
-            if (target == null && weight == 0f) { Apply(0f); active = null; }
+            if (target == null && weight == 0f) Clear();
+        }
+
+        private Transform HoverTarget(float dt)
+        {
+            Transform hit = FindHovered();
+            if (hit != null)
+            {
+                lostFor = 0f;
+                return hit;
+            }
+            lostFor += dt;
+            return lostFor < pulse.LostGrace ? active : null;
+        }
+
+        private void Switch(Transform target)
+        {
+            if (active != null) Apply(0f);
+            active = target;
+            Cache(active);
+            phase = 0f;
+            weight = 0f;
+        }
+
+        private void Clear()
+        {
+            Apply(0f);
+            active = null;
         }
 
         private static Transform FindHovered()
         {
-            if (Mouse.current == null || !ScreenRaycast.TryRaycast(Mouse.current.position.ReadValue(), ~0, out RaycastHit hit)) return null;
-            var building = hit.collider.GetComponentInParent<Building>();
-            return building != null && building.IsStanding ? building.transform : null;
+            if (GameInput.IsLocked || Mouse.current == null) return null;
+            if (!ScreenRaycast.TryPick(Mouse.current.position.ReadValue(), ~0, out Building building)) return null;
+            return building.IsStanding ? building.transform : null;
         }
 
         private void Cache(Transform building)
         {
-            renderers = building.GetComponentsInChildren<Renderer>();
-            baseColors = new Color[renderers.Length];
+            Renderer[] renderers = building.GetComponentsInChildren<Renderer>();
+            tinted = new TintedRenderer[renderers.Length];
             for (int i = 0; i < renderers.Length; i++)
-                baseColors[i] = renderers[i].sharedMaterial.HasProperty(BaseColor) ? renderers[i].sharedMaterial.GetColor(BaseColor) : Color.white;
+                tinted[i] = new TintedRenderer { Renderer = renderers[i], BaseColor = BaseColorOf(renderers[i]) };
+        }
+
+        private static Color BaseColorOf(Renderer renderer)
+        {
+            Material material = renderer.sharedMaterial;
+            return material.HasProperty(BaseColor) ? material.GetColor(BaseColor) : Color.white;
         }
 
         private void Apply(float boost)
         {
-            for (int i = 0; i < renderers.Length; i++)
+            foreach (TintedRenderer entry in tinted)
             {
-                if (renderers[i] == null) continue;
-                Color c = baseColors[i];
+                if (entry.Renderer == null) continue;
+                Color c = entry.BaseColor;
                 block.SetColor(BaseColor, new Color(c.r * (1f + boost), c.g * (1f + boost), c.b * (1f + boost), c.a));
-                renderers[i].SetPropertyBlock(boost > 0f ? block : null);
+                entry.Renderer.SetPropertyBlock(boost > 0f ? block : null);
             }
         }
     }

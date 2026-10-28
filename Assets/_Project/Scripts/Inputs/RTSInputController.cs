@@ -38,7 +38,7 @@ namespace SporeTribal.Inputs
         private void Update()
         {
             var mouse = Mouse.current;
-            if (mouse == null) return;
+            if (mouse == null || GameInput.IsLocked) return;
 
             ReadCameraInput(mouse);
 
@@ -78,13 +78,9 @@ namespace SporeTribal.Inputs
 
             ReadMiddleDrag(mouse);
 
-            var keyboard = Keyboard.current;
-            if (keyboard == null || !KeyPanEnabled) return;
-
-            var dir = new Vector2(
-                (keyboard.rightArrowKey.isPressed ? 1f : 0f) - (keyboard.leftArrowKey.isPressed ? 1f : 0f),
-                (keyboard.upArrowKey.isPressed ? 1f : 0f) - (keyboard.downArrowKey.isPressed ? 1f : 0f));
-            if (dir != Vector2.zero) PanKeyed?.Invoke(dir.normalized);
+            if (!KeyPanEnabled) return;
+            Vector2 dir = GameInput.Controls.Camera.Pan.ReadValue<Vector2>();
+            if (dir != Vector2.zero) PanKeyed?.Invoke(dir);
         }
 
         private void ReadMiddleDrag(Mouse mouse)
@@ -95,7 +91,7 @@ namespace SporeTribal.Inputs
             if (!middleHeld) return;
 
             Vector2 delta = mouse.delta.ReadValue();
-            bool orbit = Keyboard.current != null && Keyboard.current.shiftKey.isPressed;
+            bool orbit = GameInput.Controls.Camera.OrbitModifier.IsPressed();
             if (orbit) OrbitDragged?.Invoke(delta);
             else PanDragged?.Invoke(delta);
         }

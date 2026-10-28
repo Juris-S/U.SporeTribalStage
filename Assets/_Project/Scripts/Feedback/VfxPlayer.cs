@@ -17,19 +17,28 @@ namespace SporeTribal.Feedback
             if (instance == this) instance = null;
         }
 
-        public static GameObject Play(VfxKey key, Vector3 position, float lifetime = -1f)
+        public static GameObject Play(VfxId id, Vector3 position) =>
+            instance != null ? Play(id, position, instance.defaultLifetime) : null;
+
+        public static GameObject Play(VfxId id, Vector3 position, float lifetime)
         {
-            if (instance == null || key == VfxKey.None) return null;
-            GameObject prefab = instance.library != null ? instance.library.Get(key) : null;
+            GameObject spawned = Spawn(id, position);
+            if (spawned != null) Destroy(spawned, lifetime);
+            return spawned;
+        }
+
+        public static GameObject PlayPersistent(VfxId id, Vector3 position) => Spawn(id, position);
+
+        private static GameObject Spawn(VfxId id, Vector3 position)
+        {
+            if (instance == null || id == VfxId.None) return null;
+            GameObject prefab = instance.library != null ? instance.library.Get(id) : null;
             if (prefab == null)
             {
-                Debug.LogWarning($"[Vfx] No prefab bound to {key} in the VfxLibrary.");
+                Debug.LogWarning($"[Vfx] No prefab bound to {id} in the VfxLibrary.");
                 return null;
             }
-            GameObject spawned = Instantiate(prefab, position, Quaternion.identity, instance.transform);
-            if (lifetime < 0f) lifetime = instance.defaultLifetime;
-            if (lifetime > 0f) Destroy(spawned, lifetime);
-            return spawned;
+            return Instantiate(prefab, position, Quaternion.identity, instance.transform);
         }
     }
 }

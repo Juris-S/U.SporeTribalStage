@@ -7,9 +7,9 @@ namespace SporeTribal.Feedback
     public class HealthEffects : MonoBehaviour
     {
         [Tooltip("Played on every damage tick.")]
-        [SerializeField] private VfxKey hitEffect = VfxKey.Hit;
+        [SerializeField] private VfxId hitEffect = VfxId.Hit;
         [Tooltip("Played once on death.")]
-        [SerializeField] private VfxKey deathEffect = VfxKey.Death;
+        [SerializeField] private VfxId deathEffect = VfxId.Death;
         [Tooltip("Height above the pivot where effects spawn.")]
         [SerializeField] private float spawnHeight = 1f;
 

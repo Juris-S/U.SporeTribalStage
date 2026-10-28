@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace SporeTribal.Combat
 {
-    public class Health : MonoBehaviour
+    public class Health : MonoBehaviour, IDamageable
     {
         [SerializeField] private int max = 50;
         [Tooltip("Seconds without taking damage before health starts to regenerate.")]

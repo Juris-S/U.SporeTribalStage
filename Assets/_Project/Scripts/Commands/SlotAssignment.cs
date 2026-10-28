@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SporeTribal.Utilities;
 using SporeTribal.Villagers;
 using UnityEngine;
 
@@ -21,8 +22,8 @@ namespace SporeTribal.Commands
                     for (int b = a + 1; b < n; b++)
                     {
                         Vector3 pa = units[a].transform.position, pb = units[b].transform.position;
-                        float current = Distance(pa, slots[assignment[a]]) + Distance(pb, slots[assignment[b]]);
-                        float swapped = Distance(pa, slots[assignment[b]]) + Distance(pb, slots[assignment[a]]);
+                        float current = pa.FlatDistance(slots[assignment[a]]) + pb.FlatDistance(slots[assignment[b]]);
+                        float swapped = pa.FlatDistance(slots[assignment[b]]) + pb.FlatDistance(slots[assignment[a]]);
                         if (swapped < current - 0.001f)
                         {
                             (assignment[a], assignment[b]) = (assignment[b], assignment[a]);
@@ -33,12 +34,6 @@ namespace SporeTribal.Commands
             }
 
             return assignment;
-        }
-
-        private static float Distance(Vector3 a, Vector3 b)
-        {
-            a.y = b.y = 0f;
-            return Vector3.Distance(a, b);
         }
     }
 }

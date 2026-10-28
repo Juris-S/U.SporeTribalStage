@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30edbe1ed6ee2164882c403f628975de, type: 3}
+  m_Name: Recital
+  m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Definitions.RecitalDefinition
+  approachTimeout: 45
+  maxAudience: 6
+  musterTimeout: 20
+  callSeconds: 5
+  pauseSeconds: 1.5
+  playSeconds: 4
+  startProgress: 0.35
+  baseIncrement: 0.25
+  failPenalty: 0.15
+  rewardAtFull: 70
+  disappointment: 5
+  harsh:
+    time: 0.7
+    gain: 1
+    penalty: 1.5
+  neutral:
+    time: 1
+    gain: 1
+    penalty: 1
+  warm:
+    time: 1.25
+    gain: 1.25
+    penalty: 0.6
+  smallGift: 50
+  largeGift: 100

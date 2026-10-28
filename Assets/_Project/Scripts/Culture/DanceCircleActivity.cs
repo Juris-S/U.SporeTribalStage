@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace SporeTribal.Culture
 {
-    [CreateAssetMenu(menuName = "SporeTribal/Culture/Dance Circle", fileName = "DanceCircle")]
+    [CreateAssetMenu(menuName = "Tribal/Culture/Dance Circle", fileName = "DanceCircle")]
     public class DanceCircleActivity : CultureActivity
     {
         [Header("Dance circle")]

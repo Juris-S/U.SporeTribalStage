@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
+using SporeTribal.Inputs;
 using SporeTribal.Utilities;
 
 namespace SporeTribal.Rendering
@@ -20,7 +21,6 @@ namespace SporeTribal.Rendering
         [SerializeField] private float groundHeight;
         [Tooltip("Half-size in view space of the widened culling box. Must cover everything that can bend into view.")]
         [SerializeField] private float cullingExtent = 150f;
-        [SerializeField] private Key toggleKey = Key.B;
 
         public bool BendEnabled
         {
@@ -28,32 +28,26 @@ namespace SporeTribal.Rendering
             set => bendEnabled = value;
         }
 
-        public Key ToggleKey => toggleKey;
-
         private float Amount => 1f / (2f * Mathf.Max(planetRadius, 1f));
 
         private void OnEnable()
         {
             RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
             RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+            if (Application.isPlaying) GameInput.Controls.DevTools.ToggleWorldBend.performed += OnToggle;
         }
 
         private void OnDisable()
         {
             RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
             RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+            if (Application.isPlaying) GameInput.Controls.DevTools.ToggleWorldBend.performed -= OnToggle;
 
             Shader.SetGlobalFloat(WorldBend.AmountId, 0f);
             WorldBend.SetState(0f, Vector3.zero);
         }
 
-        private void Update()
-        {
-            if (!Application.isPlaying) return;
-
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard != null && keyboard[toggleKey].wasPressedThisFrame) bendEnabled = !bendEnabled;
-        }
+        private void OnToggle(InputAction.CallbackContext _) => bendEnabled = !bendEnabled;
 
         private void LateUpdate()
         {

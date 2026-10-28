@@ -18,7 +18,6 @@ namespace SporeTribal.UI
         [SerializeField] private float heightAboveCaller = 3f;
         [SerializeField] private float bannerSeconds = 4f;
         [SerializeField] private float meterSeconds = 0.45f;
-        [SerializeField] private Key hintsToggleKey = Key.F4;
         [SerializeField] private bool hintsStartVisible;
         [Tooltip("Tint of an instrument's silhouette while it cannot be played.")]
         [SerializeField] private Color idleTint = new Color(1f, 1f, 1f, 0.35f);
@@ -71,6 +70,7 @@ namespace SporeTribal.UI
             director.Ended += OnEnded;
             director.Answered += OnAnswered;
             director.Started += OnStarted;
+            GameInput.Controls.Interface.ToggleHints.performed += OnToggleHints;
         }
 
         private void Start()
@@ -84,6 +84,7 @@ namespace SporeTribal.UI
             director.Ended -= OnEnded;
             director.Answered -= OnAnswered;
             director.Started -= OnStarted;
+            GameInput.Controls.Interface.ToggleHints.performed -= OnToggleHints;
             if (input != null && input.PointerBlocked == Blocked) input.PointerBlocked = previousBlocker;
         }
 
@@ -97,7 +98,7 @@ namespace SporeTribal.UI
                 button.AddToClassList("perf__button");
                 var icon = new VisualElement { pickingMode = PickingMode.Ignore };
                 icon.AddToClassList("perf__button-icon");
-                var key = new Label((i + 1).ToString()) { pickingMode = PickingMode.Ignore };
+                var key = new Label(GameInput.InstrumentAction(kind).GetBindingDisplayString()) { pickingMode = PickingMode.Ignore };
                 key.AddToClassList("perf__button-key");
                 var count = new Label { pickingMode = PickingMode.Ignore };
                 count.AddToClassList("perf__button-count");
@@ -117,6 +118,13 @@ namespace SporeTribal.UI
                 if (tray.worldBound.Contains(panelPoint)) return true;
             }
             return previousBlocker != null && previousBlocker(screen);
+        }
+
+        private void OnToggleHints(InputAction.CallbackContext _)
+        {
+            if (relationship == null) return;
+            bool hidden = relationship.resolvedStyle.display == DisplayStyle.None;
+            relationship.style.display = hidden ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         private void OnStarted(Village target) => Show("The band heads out to perform.");
@@ -157,8 +165,6 @@ namespace SporeTribal.UI
         private void Update()
         {
             if (root == null) return;
-            if (Keyboard.current != null && Keyboard.current[hintsToggleKey].wasPressedThisFrame)
-                relationship.style.display = relationship.resolvedStyle.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None;
             if (bannerUntil > 0f && Time.time > bannerUntil)
             {
                 bannerUntil = 0f;

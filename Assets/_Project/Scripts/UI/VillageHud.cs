@@ -24,7 +24,6 @@ namespace SporeTribal.UI
         [SerializeField] private float recruitRadius = 2.5f;
 
         [Header("Debug")]
-        [SerializeField] private Key debugToggleKey = Key.F1;
         [SerializeField] private int[] debugFoodAmounts = { 10, 50, 100 };
 
         private const float Margin = 12f;
@@ -45,21 +44,23 @@ namespace SporeTribal.UI
         private Rect debugPanel;
         private bool debugVisible;
 
+        private static InputAction DebugToggle => GameInput.Controls.DevTools.ToggleVillageDebug;
+
         private void OnEnable()
         {
             input.PointerBlocked = Blocked;
+            DebugToggle.performed += OnDebugToggle;
         }
 
         private void OnDisable()
         {
             input.PointerBlocked = null;
+            DebugToggle.performed -= OnDebugToggle;
         }
 
-        private void Update()
-        {
-            if (Keyboard.current != null && Keyboard.current[debugToggleKey].wasPressedThisFrame) debugVisible = !debugVisible;
-            UpdateHutHover();
-        }
+        private void OnDebugToggle(InputAction.CallbackContext _) => debugVisible = !debugVisible;
+
+        private void Update() => UpdateHutHover();
 
         private void UpdateHutHover()
         {
@@ -132,7 +133,7 @@ namespace SporeTribal.UI
             GUI.Box(debugPanel, GUIContent.none);
 
             float y = debugPanel.y + 6f;
-            GUI.Label(new Rect(debugPanel.x + 6f, y, DebugWidth - 12f, Row - 4f), $"Debug ({debugToggleKey} hides)");
+            GUI.Label(new Rect(debugPanel.x + 6f, y, DebugWidth - 12f, Row - 4f), $"Debug ({DebugToggle.GetBindingDisplayString()} hides)");
             y += Row;
 
             float w = (DebugWidth - 12f) / (debugFoodAmounts.Length + 1);

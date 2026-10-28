@@ -5337,17 +5337,7 @@ MonoBehaviour:
   plaza:
   - {fileID: 149468538}
   facing: 180
-  hutDistance: 15
-  ringRadius: 16
-  frontGap: 80
-  plazaRadius: 7
-  plazaArc: 90
-  centreClearing: {x: 13, y: 5}
-  hutClearing: {x: 6, y: 3}
-  ringClearing: {x: 6, y: 3}
-  ringStone: {x: 0, y: 0}
-  star: {x: 4.5, y: 2, z: 2.5}
-  starOverhang: 0.5
+  layout: {fileID: 11400000, guid: 027df03f976b4452a441f1463c428b65, type: 2}
 --- !u!1001 &238063054
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7034,24 +7024,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.CameraControl.RTSCameraController
   input: {fileID: 1808637038}
-  fieldOfView: 60
-  nearClip: 0.1
-  farClip: 1000
-  minDistance: 5
-  maxDistance: 70
-  zoomStep: 0.5
-  pitchRange: {x: 20, y: 80}
-  basePanSpeed: 15
-  referenceDistance: 15
-  dragPanSpeed: 0.0025
-  orbitSpeed: 0.25
-  edgeScroll: 1
-  edgeMarginPixels: 16
-  panAccelTime: 0.1
-  velocityDecayTime: 0.2
-  anchorSmoothTime: 0.05
-  zoomSmoothTime: 0.08
-  azimuthSmoothTime: 0.05
+  profile: {fileID: 11400000, guid: 151d08e2afe54c8488911d283b893e8f, type: 2}
 --- !u!114 &330585549
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7066,10 +7039,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.CameraControl.CameraAutoOrbit
   cameraController: {fileID: 330585548}
   input: {fileID: 1808637038}
-  toggleKey: 29
-  startSpeed: 8
-  maxSpeed: 60
-  speedRamp: 20
+  profile: {fileID: 11400000, guid: 151d08e2afe54c8488911d283b893e8f, type: 2}
 --- !u!114 &330585550
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7088,7 +7058,6 @@ MonoBehaviour:
   planetRadius: 500
   groundHeight: 0
   cullingExtent: 150
-  toggleKey: 16
 --- !u!114 &330585551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8818,6 +8787,7 @@ GameObject:
   m_Component:
   - component: {fileID: 400937026}
   - component: {fileID: 400937027}
+  - component: {fileID: 400937028}
   m_Layer: 0
   m_Name: Match Director
   m_TagString: Untagged
@@ -8866,6 +8836,32 @@ MonoBehaviour:
   stingerOutput: {fileID: -8614387164824320970, guid: d003084229d3a51418cf59f25d4701ad, type: 2}
   stingerFadeIn: 1.5
   stingerFadeOut: 2
+--- !u!82 &400937028
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 400937025}
+  m_Enabled: 1
+  OutputAudioMixerGroup: {fileID: -8614387164824320970, guid: d003084229d3a51418cf59f25d4701ad, type: 2}
+  m_audioClip: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
 --- !u!1 &407046893
 GameObject:
   m_ObjectHideFlags: 0
@@ -31138,11 +31134,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 21afa26dd217d424eade37e270381e2c, type: 2}
   - {fileID: 11400000, guid: 7eeb49c4f7bdd1f4d841679d1f2b3c92, type: 2}
   minHomeGuard: 2
-  rallyPoint: {fileID: 795266653}
-  rallyRadius: 4
-  musterTimeout: 25
-  raidNowKey: 95
-  stealNowKey: 96
+  muster:
+    rallyPoint: {fileID: 795266653}
+    rallyRadius: 4
+    timeout: 25
 --- !u!114 &1424161966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31218,17 +31213,7 @@ MonoBehaviour:
   - {fileID: 1176600609}
   plaza: []
   facing: 300
-  hutDistance: 15
-  ringRadius: 16
-  frontGap: 80
-  plazaRadius: 7
-  plazaArc: 90
-  centreClearing: {x: 13, y: 5}
-  hutClearing: {x: 6, y: 3}
-  ringClearing: {x: 6, y: 3}
-  ringStone: {x: 0, y: 0}
-  star: {x: 4.5, y: 2, z: 2.5}
-  starOverhang: 0.5
+  layout: {fileID: 11400000, guid: 027df03f976b4452a441f1463c428b65, type: 2}
 --- !u!1001 &1429237859
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -39096,11 +39081,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Feedback.ClickPing
   material: {fileID: 2100000, guid: 73a8e7ffe479d1e4aae7e96de557f6eb, type: 2}
-  color: {r: 1, g: 0.95, b: 0.6, a: 1}
-  duration: 0.45
-  startSize: 0.5
-  endSize: 2.2
-  lift: 0.03
+  style:
+    color: {r: 1, g: 0.95, b: 0.6, a: 1}
+    duration: 0.45
+    startSize: 0.5
+    endSize: 2.2
+    lift: 0.03
 --- !u!114 &1808637041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39116,8 +39102,6 @@ MonoBehaviour:
   selection: {fileID: 1808637036}
   dispatcher: {fileID: 1808637035}
   lineMaterial: {fileID: 2100000, guid: e80cb91c339de7144bee9e2d6838ae19, type: 2}
-  toggleKey: 28
-  allKey: 27
   lineWidth: 0.12
   lift: 0.06
   slotRadius: 0.4
@@ -39140,7 +39124,6 @@ MonoBehaviour:
   recruitCost: 10
   maxVillagers: 12
   recruitRadius: 1.2
-  debugToggleKey: 94
   debugFoodAmounts: 0a0000003200000064000000i
 --- !u!114 &1808637043
 MonoBehaviour:
@@ -39154,10 +39137,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ecc88c69863aaa44eaeabd34d88804f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.BuildingHoverPulse
-  peakBrightness: 0.35
-  period: 0.8
-  fadeTime: 0.35
-  lostGrace: 0.15
+  pulse:
+    peakBrightness: 0.35
+    period: 0.8
+    fadeTime: 0.35
+    lostGrace: 0.15
 --- !u!114 &1808637044
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39223,6 +39207,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 18c885cca5f641dd9c28935e3d7f4189, type: 2}
   - {fileID: 11400000, guid: 3a4bb409cbfb43f8afa34f3561988ebc, type: 2}
   - {fileID: 11400000, guid: cb150edf75614361bcc7333962fcdf7c, type: 2}
+  recital: {fileID: 11400000, guid: 188bf96d566944ccbeb724b1da09548a, type: 2}
   failClip: {fileID: 0}
   playEffect: 5
   playEffectHeight: 1.5
@@ -39234,31 +39219,6 @@ MonoBehaviour:
     bandArc: 120
     audienceRadius: 2.5
     slotSpacing: 1.6
-  approachTimeout: 45
-  maxAudience: 6
-  musterTimeout: 20
-  callSeconds: 5
-  pauseSeconds: 1.5
-  playSeconds: 4
-  startProgress: 0.35
-  baseIncrement: 0.25
-  failPenalty: 0.15
-  rewardAtFull: 70
-  disappointment: 5
-  harsh:
-    time: 0.7
-    gain: 1
-    penalty: 1.5
-  neutral:
-    time: 1
-    gain: 1
-    penalty: 1
-  warm:
-    time: 1.25
-    gain: 1.25
-    penalty: 0.6
-  smallGift: 50
-  largeGift: 100
 --- !u!114 &1808637048
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39276,7 +39236,6 @@ MonoBehaviour:
   heightAboveCaller: 3
   bannerSeconds: 4
   meterSeconds: 0.45
-  hintsToggleKey: 95
   hintsStartVisible: 0
   idleTint: {r: 1, g: 1, b: 1, a: 0.35}
 --- !u!114 &1808637049
@@ -39292,11 +39251,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Commands.PerformanceInput
   director: {fileID: 1808637047}
-  hornKey: 41
-  maracaKey: 42
-  didgeridooKey: 43
-  giftKey: 21
-  soothingSongKey: 22
 --- !u!114 &1808637050
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -39334,14 +39288,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Debugging.CultureDebugPanel
   startVisible: 0
   orbit: {fileID: 330585549}
-  toggleOverlayKey: 102
-  cycleSubjectKey: 3
-  activityKeys: 6200000063000000i
-  aggressiveKey: 100
-  friendlyKey: 101
   shiftStep: 0.25
-  hitKey: 70
-  killKey: 71
   hitDamage: 5
 --- !u!1001 &1814735588
 PrefabInstance:

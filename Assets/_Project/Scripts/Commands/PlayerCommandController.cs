@@ -26,39 +26,57 @@ namespace SporeTribal.Commands
         private void HandleCommand(Vector2 screenPosition)
         {
             if (selection.Selected.Count == 0) return;
+            if (TryResolveTarget(screenPosition, out ClickTarget target)) Issue(target);
+        }
 
-            ClickTarget target;
-            if (ScreenRaycast.TryRaycast(screenPosition, unitMask, out RaycastHit unitHit) && unitHit.collider.GetComponentInParent<VillagerUnit>() is VillagerUnit unit)
+        private bool TryResolveTarget(Vector2 screenPosition, out ClickTarget target)
+        {
+            if (ScreenRaycast.TryPick(screenPosition, unitMask, out VillagerUnit unit))
             {
-                Issue(ClickTarget.Villager(unit));
-                return;
+                target = ClickTarget.Villager(unit);
+                return true;
             }
 
-            bool onResource = ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit);
-            if (onResource && resourceHit.collider.GetComponentInParent<FoodNode>() is FoodNode node)
-            {
-                target = ClickTarget.Resource(node, resourceHit.point);
-            }
-            else if (onResource && resourceHit.collider.GetComponentInParent<Building>() is Building building)
-            {
-                target = ClickTarget.AtBuilding(building, resourceHit.point);
-            }
-            else if (onResource) return;
-            else if (ScreenRaycast.TryRaycast(screenPosition, groundMask, out RaycastHit hit))
-            {
-                target = ClickTarget.Ground(hit.point);
-                if (clickPing != null) clickPing.Play(hit.point);
-            }
-            else return;
+            if (ScreenRaycast.TryRaycast(screenPosition, resourceMask, out RaycastHit resourceHit))
+                return TryResolveResource(resourceHit, out target);
 
-            Issue(target);
+            if (ScreenRaycast.TryRaycast(screenPosition, groundMask, out RaycastHit groundHit))
+            {
+                target = ClickTarget.Ground(groundHit.point);
+                if (clickPing != null) clickPing.Play(groundHit.point);
+                return true;
+            }
+
+            target = default;
+            return false;
+        }
+
+        private static bool TryResolveResource(RaycastHit hit, out ClickTarget target)
+        {
+            if (hit.collider.GetComponentInParent<FoodNode>() is FoodNode node)
+            {
+                target = ClickTarget.Resource(node, hit.point);
+                return true;
+            }
+            if (hit.collider.GetComponentInParent<Building>() is Building building)
+            {
+                target = ClickTarget.AtBuilding(building, hit.point);
+                return true;
+            }
+            target = default;
+            return false;
         }
 
         private void Issue(ClickTarget target)
         {
             OrderBatch batch = dispatcher.Issue(selection.Selected, target);
-            if (batch.AllRefusedReason() is RefusalReason reason) Debug.Log($"[Order] All refused: {reason.Describe()}");
-            else if (batch.GroupRefusal != RefusalReason.None) Debug.Log($"[Order] Performance refused: {batch.GroupRefusal.Describe()}");
+            if (batch.AllRefusedReason() is RefusalReason reason)
+            {
+                Debug.Log($"[Order] All refused: {reason.Describe()}");
+                return;
+            }
+            if (batch.GroupRefusal != RefusalReason.None)
+                Debug.Log($"[Order] Performance refused: {batch.GroupRefusal.Describe()}");
         }
     }
 }

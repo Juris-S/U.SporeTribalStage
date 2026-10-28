@@ -22,6 +22,16 @@ namespace SporeTribal.Utilities
                 : Physics.Raycast(ray, out hit, MaxDistance, mask);
         }
 
+        public static bool TryPick<T>(Vector2 screenPosition, LayerMask mask, out T picked, out RaycastHit hit) where T : Component
+        {
+            picked = null;
+            return TryRaycast(screenPosition, mask, out hit)
+                && (picked = hit.collider.GetComponentInParent<T>()) != null;
+        }
+
+        public static bool TryPick<T>(Vector2 screenPosition, LayerMask mask, out T picked) where T : Component =>
+            TryPick(screenPosition, mask, out picked, out _);
+
         private static bool TryRaycastBent(Ray ray, LayerMask mask, out RaycastHit hit)
         {
             Vector3 previous = WorldBend.Remove(ray.origin);
