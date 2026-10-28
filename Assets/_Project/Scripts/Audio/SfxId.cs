@@ -1,0 +1,29 @@
+namespace SporeTribal.Audio
+{
+    public enum SfxId
+    {
+        None,
+        Select,
+        OrderGiven,
+        VoiceCurious,
+        VoiceWarCry,
+        VoiceChant,
+        DiplomacyCurious,
+        DiplomacyHappy,
+        DiplomacyWarCry,
+        UiJingle,
+        PerformanceLoop,
+        BattleLoop,
+        VillagerDeath,
+        EnemyDeath,
+        BuildingHit,
+        AmbienceWind,
+        AmbienceBirds,
+        AmbienceInsects,
+        VillagerScat,
+        VillagerAttack,
+        DanceCircle,
+        PlayFight,
+        Punch
+    }
+}

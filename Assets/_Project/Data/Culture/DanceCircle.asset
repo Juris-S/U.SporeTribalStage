@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: DanceCircle
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Culture.DanceCircleActivity
   label: Dance circle
+  sound: 20
   appeal:
     serializedVersion: 2
     m_Curve:

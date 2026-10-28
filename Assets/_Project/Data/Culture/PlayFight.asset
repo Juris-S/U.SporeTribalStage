@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: PlayFight
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Culture.PlayFightActivity
   label: Play fight
+  sound: 21
   appeal:
     serializedVersion: 2
     m_Curve:
