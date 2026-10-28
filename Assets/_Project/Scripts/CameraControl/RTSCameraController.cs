@@ -7,6 +7,8 @@ namespace SporeTribal.CameraControl
     [RequireComponent(typeof(Camera))]
     public class RTSCameraController : MonoBehaviour
     {
+        private const float GroundProbeHeight = 100f;
+
         [SerializeField] private RTSInputController input;
         [SerializeField] private CameraProfile profile;
 
@@ -14,6 +16,7 @@ namespace SporeTribal.CameraControl
         public float Zoom01 => Mathf.InverseLerp(profile.MinDistance, profile.MaxDistance, distance);
 
         private Camera cam;
+        private int groundMask;
 
         private Vector3 focus;
         private float yaw;
@@ -34,6 +37,7 @@ namespace SporeTribal.CameraControl
         private void Awake()
         {
             cam = GetComponent<Camera>();
+            groundMask = LayerMask.GetMask("Ground");
             cam.fieldOfView = profile.FieldOfView;
             cam.nearClipPlane = profile.NearClip;
             cam.farClipPlane = profile.FarClip;
@@ -62,6 +66,7 @@ namespace SporeTribal.CameraControl
             float startDistance = ground.Raycast(ray, out float hit) ? hit : profile.ReferenceDistance;
             distance = Mathf.Clamp(startDistance, profile.MinDistance, profile.MaxDistance);
             focus = ray.GetPoint(distance);
+            focus.y = GroundHeight(focus);
             yaw = transform.eulerAngles.y;
 
             targetFocus = focus;
@@ -114,6 +119,7 @@ namespace SporeTribal.CameraControl
         {
             float dt = Time.unscaledDeltaTime;
             UpdatePan(dt);
+            targetFocus.y = GroundHeight(targetFocus);
 
             focus = Vector3.SmoothDamp(focus, targetFocus, ref focusVelocity, profile.AnchorSmoothTime, Mathf.Infinity, dt);
             yaw = Mathf.SmoothDampAngle(yaw, targetYaw, ref yawVelocity, profile.AzimuthSmoothTime, Mathf.Infinity, dt);
@@ -123,6 +129,12 @@ namespace SporeTribal.CameraControl
             float pitch = Mathf.Lerp(profile.PitchRange.x, profile.PitchRange.y, zoom01);
             var rotation = Quaternion.Euler(pitch, yaw, 0f);
             transform.SetPositionAndRotation(focus - rotation * Vector3.forward * distance, rotation);
+        }
+
+        private float GroundHeight(Vector3 at)
+        {
+            var probe = new Ray(new Vector3(at.x, GroundProbeHeight, at.z), Vector3.down);
+            return Physics.Raycast(probe, out RaycastHit hit, GroundProbeHeight * 2f, groundMask) ? hit.point.y : 0f;
         }
 
         private void UpdatePan(float dt)

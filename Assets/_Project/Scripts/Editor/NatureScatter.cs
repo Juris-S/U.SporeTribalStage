@@ -56,7 +56,7 @@ namespace SporeTribal.EditorTools
         [MenuItem("Tools/Tribal/Scatter Nature")]
         public static void Run()
         {
-            if (!EnvironmentBakeSettings.TryFind(out settings) || !HasRequiredAssets()) return;
+            if (!EnvironmentBakeSettings.TryFind(out settings) || !HasRequiredAssets() || !TerrainHills.Build(settings)) return;
 
             GrassInteraction old = Object.FindAnyObjectByType<GrassInteraction>();
             if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
@@ -173,7 +173,7 @@ namespace SporeTribal.EditorTools
                 var p = RandomPoint(rng, settings.HalfSize - 2f);
                 float n = Mathf.PerlinNoise(p.x * 0.08f + 7f, p.y * 0.08f + 19f);
                 if (n < 0.55f || IsBlocked(p, keepouts, 1f)) continue;
-                Place(group, settings.Bushes, p, rng, 0.8f, 1.3f, bushMaterial);
+                Place(group, settings.Bushes, p, rng, 0.8f, 1.3f, bushMaterial, settings.BushSink);
             }
 
             foreach (var v in villages)
@@ -181,7 +181,7 @@ namespace SporeTribal.EditorTools
                 {
                     var p = v + RingOffset(rng, 15f, 26f);
                     if (IsBlocked(p, keepouts, 1f)) continue;
-                    Place(group, settings.Bushes, p, rng, 0.7f, 1.1f, bushMaterial);
+                    Place(group, settings.Bushes, p, rng, 0.7f, 1.1f, bushMaterial, settings.BushSink);
                 }
         }
 
@@ -205,7 +205,7 @@ namespace SporeTribal.EditorTools
 
                 float scale = Mathf.Lerp(0.55f, 1.35f, density) * Mathf.Lerp(0.85f, 1.15f, (float)rng.NextDouble());
                 var rotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
-                var placed = Matrix4x4.TRS(new Vector3(p.x, 0f, p.y), rotation, Vector3.one * scale);
+                var placed = Matrix4x4.TRS(new Vector3(p.x, GroundY(p), p.y), rotation, Vector3.one * scale);
                 var local = prefab.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
 
                 var key = new Vector2Int(Mathf.FloorToInt(p.x / settings.GrassChunk), Mathf.FloorToInt(p.y / settings.GrassChunk));
@@ -450,7 +450,9 @@ namespace SporeTribal.EditorTools
             return false;
         }
 
-        private static void Place(GameObject group, IReadOnlyList<GameObject> models, Vector2 p, Random rng, float minScale, float maxScale, Material material)
+        private static float GroundY(Vector2 p) => TerrainHills.HeightAt(p);
+
+        private static void Place(GameObject group, IReadOnlyList<GameObject> models, Vector2 p, Random rng, float minScale, float maxScale, Material material, float sink = 0f)
         {
             var prefab = models[rng.Next(models.Count)];
             if (prefab == null)
@@ -460,9 +462,9 @@ namespace SporeTribal.EditorTools
             }
 
             var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, group.transform);
-            go.transform.position = new Vector3(p.x, 0f, p.y);
             go.transform.rotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
             go.transform.localScale = Vector3.one * Mathf.Lerp(minScale, maxScale, (float)rng.NextDouble());
+            go.transform.position = new Vector3(p.x, GroundY(p) - sink * go.transform.localScale.y, p.y);
             go.isStatic = true;
             if (material == null) return;
             foreach (var r in go.GetComponentsInChildren<MeshRenderer>())
