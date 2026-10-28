@@ -43,6 +43,7 @@ namespace SporeTribal.Buildings
         [SerializeField, Min(0f)] private float sinkExtraDepth = 1f;
 
         private Tween hitTween;
+        private Collider mainCollider;
         private MeshRenderer attackRing;
         private MaterialPropertyBlock ringBlock;
         private float nextRingScan;
@@ -69,8 +70,11 @@ namespace SporeTribal.Buildings
             return nearest;
         }
 
+        public Bounds Bounds => mainCollider != null ? mainCollider.bounds : new Bounds(transform.position, Vector3.one);
+
         protected virtual void Awake()
         {
+            mainCollider = GetComponentInChildren<Collider>();
             Spots = new StandingSpots(transform);
             Health = GetComponent<Health>();
             Health.Damaged += OnDamaged;
@@ -134,12 +138,11 @@ namespace SporeTribal.Buildings
         private void PlayImpact(GameObject source)
         {
             if (!IsStanding || hitTween.isAlive) return;
-            Collider body = GetComponentInChildren<Collider>();
             Vector3 point = transform.position + Vector3.up;
-            if (body != null && source != null)
+            if (mainCollider != null && source != null)
             {
                 Vector3 from = source.transform.position + Vector3.up;
-                point = body.ClosestPoint(from);
+                point = mainCollider.ClosestPoint(from);
             }
             VfxPlayer.Play(impactEffect, point);
             hitTween = Tween.PunchScale(transform, hitPunch, hitPunchSeconds, frequency: 6f);

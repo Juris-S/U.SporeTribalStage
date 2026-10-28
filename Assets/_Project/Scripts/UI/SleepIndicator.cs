@@ -22,7 +22,7 @@ namespace SporeTribal.UI
             foreach (HutSanctuary hut in huts)
             {
                 if (hut == null || !hut.IsSleeping) continue;
-                Bounds bounds = hut.GetComponentInChildren<Collider>() is Collider c ? c.bounds : new Bounds(hut.transform.position, Vector3.one);
+                Bounds bounds = hut.Bounds;
                 Vector3 screen = ScreenRaycast.WorldToScreen(new Vector3(bounds.center.x, bounds.max.y + heightAboveHut, bounds.center.z));
                 if (screen.z <= 0f) continue;
                 float bob = Mathf.Sin(Time.time * 2f) * bobPixels;

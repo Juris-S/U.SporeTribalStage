@@ -90,9 +90,8 @@ namespace SporeTribal.UI
             if (debugVisible) DrawDebug();
         }
 
-        private static bool AboveCollider(Collider c, Vector2 size, out Rect rect)
+        private static bool AboveBounds(Bounds b, Vector2 size, out Rect rect)
         {
-            Bounds b = c.bounds;
             Vector3 screen = ScreenRaycast.WorldToScreen(new Vector3(b.center.x, b.max.y, b.center.z));
             rect = new Rect(screen.x - size.x * 0.5f, Screen.height - screen.y - size.y - 8f, size.x, size.y);
             return screen.z > 0f;
@@ -107,7 +106,7 @@ namespace SporeTribal.UI
             if (Blocked(mouse)) return;
             if (!ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit)) return;
             ToolBuilding building = hit.collider.GetComponentInParent<ToolBuilding>();
-            if (building == null || building.Tool == null || building.Owner != village || !building.IsStanding || !AboveCollider(hit.collider, TooltipSize, out Rect rect)) return;
+            if (building == null || building.Tool == null || building.Owner != village || !building.IsStanding || !AboveBounds(hit.collider.bounds, TooltipSize, out Rect rect)) return;
 
             Color previous = GUI.color;
             GUI.color = village.Food >= building.Tool.Cost ? Color.white : new Color(1f, 0.5f, 0.5f);
@@ -117,8 +116,7 @@ namespace SporeTribal.UI
 
         private void DrawHutPopup()
         {
-            Collider c = hut != null ? hut.GetComponentInChildren<Collider>() : null;
-            if (c == null || !AboveCollider(c, HutPopupSize, out hutPopup)) return;
+            if (hut == null || !AboveBounds(hut.Bounds, HutPopupSize, out hutPopup)) return;
 
             GUI.Box(hutPopup, "Main Hut");
             bool roomToRecruit = VillagerUnit.CountIn(village) < maxVillagers;

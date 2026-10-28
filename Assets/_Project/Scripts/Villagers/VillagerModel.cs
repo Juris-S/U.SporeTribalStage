@@ -30,6 +30,8 @@ namespace SporeTribal.Villagers
         [SerializeField] private float speedSmoothing = 0.2f;
         [Tooltip("Length in seconds of the attack clip, used to retime it to the villager's swing.")]
         [SerializeField] private float attackLength = 0.9f;
+        [Tooltip("Each villager rolls a pace multiplier in this range, so groups drift out of step instead of moving in lockstep.")]
+        [SerializeField] private Vector2 paceRange = new Vector2(0.92f, 1.08f);
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
@@ -41,6 +43,7 @@ namespace SporeTribal.Villagers
         private Transform head;
         private float speed;
         private float speedVelocity;
+        private float pace = 1f;
         private Clip current;
         private Vector3 lastPosition;
         private Transform root;
@@ -54,6 +57,8 @@ namespace SporeTribal.Villagers
         public void Init(Transform root)
         {
             this.root = root;
+            pace = Random.Range(paceRange.x, paceRange.y);
+            animator.speed = pace;
             lastPosition = root.position;
             rightHand = animator.GetBoneTransform(HumanBodyBones.RightHand);
             head = animator.GetBoneTransform(HumanBodyBones.Head);
@@ -124,8 +129,9 @@ namespace SporeTribal.Villagers
             if (clip == current && !restart) return;
             current = clip;
             int id = clip == Clip.Dance ? Animator.StringToHash("Dance" + Mathf.Clamp(variant, 0, danceCount - 1)) : StateIds[(int)clip];
-            animator.speed = (clip == Clip.Attack || clip == Clip.AttackSlash) && seconds > 0f ? attackLength / seconds : 1f;
-            animator.CrossFadeInFixedTime(id, restart && clip != Clip.Dance ? crossFade : softCrossFade, 0, 0f);
+            animator.speed = (clip == Clip.Attack || clip == Clip.AttackSlash) && seconds > 0f ? attackLength / seconds : pace;
+            float phase = clip == Clip.Locomotion ? Random.value : 0f;
+            animator.CrossFadeInFixedTime(id, restart && clip != Clip.Dance ? crossFade : softCrossFade, 0, phase);
         }
 
         public void Die()
@@ -133,7 +139,7 @@ namespace SporeTribal.Villagers
             if (IsDead) return;
             Play(Clip.Death);
             IsDead = true;
-            animator.speed = 1f;
+            animator.speed = pace;
         }
 
         private void Update()

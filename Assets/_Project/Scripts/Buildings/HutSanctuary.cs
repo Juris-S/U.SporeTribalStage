@@ -20,6 +20,7 @@ namespace SporeTribal.Buildings
         private readonly List<VillagerUnit> inside = new List<VillagerUnit>();
 
         public bool IsSleeping => inside.Count > 0;
+        public Bounds Bounds => hut.Bounds;
         public Vector3 Door => hut.transform.position;
 
         private float DoorRadius => hut.StandRadius + DoorSlack;
@@ -34,13 +35,20 @@ namespace SporeTribal.Buildings
 
         public bool TryAdmit(VillagerUnit unit)
         {
-            if (unit.IsMoving || !IsAtDoor(unit) || !NeedsShelter(unit)) return false;
+            if (!IsAtDoor(unit) || !NeedsShelter(unit)) return false;
             if (!inside.Contains(unit))
             {
                 inside.Add(unit);
                 unit.Shelter();
             }
             return true;
+        }
+
+        public Vector3 DoorFor(VillagerUnit unit)
+        {
+            Vector3 toUnit = (unit.transform.position - Door).Flat();
+            Vector3 dir = toUnit.sqrMagnitude > 0.01f ? toUnit.normalized : Vector3.forward;
+            return NavMeshUtility.Snap(Door + dir * hut.StandRadius);
         }
 
         private bool IsAtDoor(VillagerUnit unit) => unit.transform.position.IsWithinFlat(Door, DoorRadius);

@@ -145,6 +145,19 @@ namespace SporeTribal.Villagers
         private bool glancing;
         private float glanceStarted;
         private const float GlanceGiveUpSeconds = 4f;
+        private const float GlanceArrivedDegrees = 0.5f;
+        private const float GlanceRangeDegrees = 30f;
+        private const float SteerDeadSqrDistance = 0.04f;
+        private const float TurnSlowestPaceFraction = 0.6f;
+        private const float FidgetMinDegrees = 10f;
+        private const float FidgetMaxDegrees = 30f;
+        private const float FidgetHoldMinSeconds = 0.8f;
+        private const float FidgetHoldMaxSeconds = 1.6f;
+        private const float StillSqrSpeed = 0.01f;
+        private const float InterruptLabelSeconds = 2.5f;
+        private const float ClipEndSlackSeconds = 0.02f;
+        private const float RetreatRangeFraction = 0.8f;
+        private const float StrikeReachSlack = 0.5f;
         private string stage;
         private Coroutine routine;
         private StandingSpots spots;
@@ -327,7 +340,7 @@ namespace SporeTribal.Villagers
             {
                 var target = Quaternion.Euler(0f, glanceYaw, 0f);
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, target, idleTurnSpeed * Time.deltaTime);
-                if (Quaternion.Angle(transform.rotation, target) < 0.5f || Time.time - glanceStarted > GlanceGiveUpSeconds)
+                if (Quaternion.Angle(transform.rotation, target) < GlanceArrivedDegrees || Time.time - glanceStarted > GlanceGiveUpSeconds)
                 {
                     glancing = false;
                     ScheduleGlance();
@@ -335,7 +348,7 @@ namespace SporeTribal.Villagers
             }
             else if (Time.time >= nextGlanceTime)
             {
-                glanceYaw = transform.eulerAngles.y + Random.Range(-30f, 30f);
+                glanceYaw = transform.eulerAngles.y + Random.Range(-GlanceRangeDegrees, GlanceRangeDegrees);
                 glanceStarted = Time.time;
                 glancing = true;
             }
@@ -360,7 +373,7 @@ namespace SporeTribal.Villagers
 
             Vector3 to = agent.steeringTarget - transform.position;
             to.y = 0f;
-            if (to.sqrMagnitude < 0.04f)
+            if (to.sqrMagnitude < SteerDeadSqrDistance)
             {
                 agent.speed = Pace;
                 return;
@@ -379,7 +392,7 @@ namespace SporeTribal.Villagers
             float off = Quaternion.Angle(transform.rotation, want);
             turning = turning ? off > TurnResumeDegrees : off > TurnStopDegrees;
             if (turning) agent.velocity = Vector3.MoveTowards(agent.velocity, Vector3.zero, turnBraking * Time.deltaTime);
-            agent.speed = turning ? 0f : Pace * Mathf.Lerp(1f, 0.6f, Mathf.InverseLerp(0f, TurnResumeDegrees, off));
+            agent.speed = turning ? 0f : Pace * Mathf.Lerp(1f, TurnSlowestPaceFraction, Mathf.InverseLerp(0f, TurnResumeDegrees, off));
         }
 
         private void Fidget()
@@ -398,8 +411,8 @@ namespace SporeTribal.Villagers
             }
             else
             {
-                fidgetYaw = Random.Range(10f, 30f) * (Random.value < 0.5f ? -1f : 1f);
-                nextFidgetTime = Time.time + Random.Range(0.8f, 1.6f);
+                fidgetYaw = Random.Range(FidgetMinDegrees, FidgetMaxDegrees) * (Random.value < 0.5f ? -1f : 1f);
+                nextFidgetTime = Time.time + Random.Range(FidgetHoldMinSeconds, FidgetHoldMaxSeconds);
             }
         }
 
@@ -511,7 +524,7 @@ namespace SporeTribal.Villagers
 
         private void WatchStall()
         {
-            if (turning || !agent.isOnNavMesh || agent.pathPending || !agent.hasPath || agent.remainingDistance <= agent.stoppingDistance || agent.velocity.sqrMagnitude > 0.01f)
+            if (turning || !agent.isOnNavMesh || agent.pathPending || !agent.hasPath || agent.remainingDistance <= agent.stoppingDistance || agent.velocity.sqrMagnitude > StillSqrSpeed)
             {
                 stalledFor = 0f;
                 return;
@@ -638,7 +651,7 @@ namespace SporeTribal.Villagers
                 return carried > 0 ? $"{step} | carrying {carried}" : step;
             }
         }
-        public string InterruptLabel => Time.time - interruptedAt < 2.5f ? $"{interruptedKind} cancelled" : null;
+        public string InterruptLabel => Time.time - interruptedAt < InterruptLabelSeconds ? $"{interruptedKind} cancelled" : null;
 
         public void Accept(TribalOrder order)
         {
@@ -737,12 +750,12 @@ namespace SporeTribal.Villagers
         {
             model.Play(clip, variant);
             clipUntil = Time.time + seconds;
-            Tween.Delay(this, seconds, static unit => unit.EndClip());
+            Tween.Delay(this, seconds, static unit => unit.EndClip(), warnIfTargetDestroyed: false);
         }
 
         private void EndClip()
         {
-            if (Time.time + 0.02f < clipUntil || !CanAnimate) return;
+            if (Time.time + ClipEndSlackSeconds < clipUntil || !CanAnimate) return;
             clipUntil = 0f;
             model.Play(VillagerModel.Clip.Locomotion);
         }
@@ -915,7 +928,7 @@ namespace SporeTribal.Villagers
                     model.Play(VillagerModel.Clip.Locomotion);
                     Vector3 away = transform.position - target.transform.position;
                     away.y = 0f;
-                    Vector3 goal = target.transform.position + away.normalized * (attackRange * 0.8f);
+                    Vector3 goal = target.transform.position + away.normalized * (attackRange * RetreatRangeFraction);
                     if (!agent.hasPath || (goal - chargeGoal).sqrMagnitude > ChargeRepathDistance * ChargeRepathDistance)
                     {
                         SteerTo(goal);
@@ -1004,7 +1017,7 @@ namespace SporeTribal.Villagers
             swingStruck = true;
             if (swingVictim != null)
             {
-                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + 0.5f)) Hit(swingVictim.Health, Damage);
+                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + StrikeReachSlack)) Hit(swingVictim.Health, Damage);
             }
             else if (swingStructure != null && swingStructure.IsStanding) Hit(swingStructure.Health, RazeDamage);
         }
@@ -1153,7 +1166,7 @@ namespace SporeTribal.Villagers
         private void Flash()
         {
             Repaint(true);
-            Tween.Delay(this, 0.08f, static unit => unit.Repaint(false));
+            Tween.Delay(this, 0.08f, static unit => unit.Repaint(false), warnIfTargetDestroyed: false);
         }
 
         private void TintHeadgear()
@@ -1185,7 +1198,7 @@ namespace SporeTribal.Villagers
             float stalled = 0f;
             while (agent.pathPending || agent.remainingDistance > agent.stoppingDistance)
             {
-                stalled = !turning && !agent.pathPending && agent.velocity.sqrMagnitude < 0.01f ? stalled + Time.deltaTime : 0f;
+                stalled = !turning && !agent.pathPending && agent.velocity.sqrMagnitude < StillSqrSpeed ? stalled + Time.deltaTime : 0f;
                 if (stalled > 2f) break;
                 yield return null;
             }

@@ -31,7 +31,7 @@ namespace SporeTribal.UI
             {
                 Health health = building.Health;
                 if (!building.IsStanding || health.Current >= health.Max) continue;
-                Bounds bounds = building.GetComponentInChildren<Collider>() is Collider c ? c.bounds : new Bounds(building.transform.position, Vector3.one);
+                Bounds bounds = building.Bounds;
                 Draw(new Vector3(bounds.center.x, bounds.max.y + 0.5f, bounds.center.z), buildingSize, health.Fraction);
             }
         }
