@@ -44,6 +44,19 @@ namespace SporeTribal.EditorTools
         [Tooltip("World width covered by the ground mask, centred on the origin.")]
         [SerializeField] private float maskSize = 150f;
 
+        [Tooltip("Bushes are planted this far into the ground (metres at scale 1) so they do not look perched.")]
+        [SerializeField] private float bushSink = 0.12f;
+
+        [Header("Hills")]
+        [Tooltip("Tallest hill crest above the flat ground, in metres.")]
+        [SerializeField] private float hillHeight = 1.6f;
+        [Tooltip("Distance between neighbouring hills, in metres.")]
+        [SerializeField] private float hillWavelength = 45f;
+        [Tooltip("Noise below this (0-1) stays flat, so hills sit on open plains.")]
+        [SerializeField, Range(0f, 0.9f)] private float hillThreshold = 0.35f;
+        [Tooltip("Distance over which the ground rises from flat village ground to full height.")]
+        [SerializeField] private float hillBlend = 12f;
+
         [Header("Clearances")]
         [SerializeField] private float buildingClearance = 7f;
         [SerializeField] private float villageClearance = 9f;
@@ -74,6 +87,11 @@ namespace SporeTribal.EditorTools
         public int MaskResolution => maskResolution;
         public float MaskSize => maskSize;
         public float MaskOrigin => -maskSize * 0.5f;
+        public float BushSink => bushSink;
+        public float HillHeight => hillHeight;
+        public float HillWavelength => hillWavelength;
+        public float HillThreshold => hillThreshold;
+        public float HillBlend => hillBlend;
         public float BuildingClearance => buildingClearance;
         public float VillageClearance => villageClearance;
         public float FoodClearance => foodClearance;

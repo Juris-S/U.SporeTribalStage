@@ -56,11 +56,11 @@ MonoBehaviour:
   groundMask: {fileID: 2800000, guid: 64de93638c6392c43b1616547693e20c, type: 3}
   grassMeshFolder: {fileID: 102900000, guid: 9e421f663c12bc348a29a252ee866df8, type: 3}
   seed: 7
-  halfSize: 72
+  halfSize: 122
   forestEdge: 52
   grassChunk: 24
   maskResolution: 512
-  maskSize: 150
+  maskSize: 250
   buildingClearance: 7
   villageClearance: 9
   foodClearance: 4
