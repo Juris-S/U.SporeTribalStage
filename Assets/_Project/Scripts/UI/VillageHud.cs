@@ -27,6 +27,7 @@ namespace SporeTribal.UI
         [SerializeField] private int[] debugFoodAmounts = { 10, 50, 100 };
 
         private const float Margin = 12f;
+        private const float SpawnClearance = 1f;
         private const float Row = 30f;
         private static readonly Vector2 FoodSize = new Vector2(150f, 44f);
         private static readonly Vector2 TooltipSize = new Vector2(130f, 48f);
@@ -193,10 +194,10 @@ namespace SporeTribal.UI
 
         private bool TryFindSpawnPoint(out Vector3 point)
         {
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 16; i++)
             {
                 Vector2 offset = Random.insideUnitCircle * recruitRadius;
-                if (NavMesh.SamplePosition(recruitPoint.position + new Vector3(offset.x, 0f, offset.y), out NavMeshHit hit, 0.5f, NavMesh.AllAreas))
+                if (NavMesh.SamplePosition(recruitPoint.position + new Vector3(offset.x, 0f, offset.y), out NavMeshHit hit, 0.5f, NavMesh.AllAreas) && !VillagerUnit.IsCrowded(hit.position, SpawnClearance))
                 {
                     point = hit.position;
                     return true;

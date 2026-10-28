@@ -22,6 +22,12 @@ namespace SporeTribal.AI
         [SerializeField] private int minHomeGuard = 2;
         [SerializeField] private MusterSettings muster = new MusterSettings();
 
+        [Header("Opportunism")]
+        [Tooltip("A raid plan also becomes eligible, whatever its own relationship and population range, when the target dislikes us no more than this (a tribe we angered) and we outnumber it.")]
+        [SerializeField, Range(-100, 100)] private int opportunisticMaxRelationship = -1;
+        [Tooltip("Our head count must be at least this many times the target's to count as outnumbering it.")]
+        [SerializeField, Min(1f)] private float outnumberRatio = 1.5f;
+
         public event Action<Village, RaidAlert, Vector3> Alerted;
 
         private Village village;
@@ -115,8 +121,12 @@ namespace SporeTribal.AI
 
         private bool IsEligible(RaidDefinition plan) =>
             HasHostileTarget
-            && plan.RelationshipAllows(village.RelationshipTo(target))
-            && plan.PopulationAllows(target.Population());
+            && ((plan.RelationshipAllows(village.RelationshipTo(target)) && plan.PopulationAllows(target.Population())) || SeesOpening(plan));
+
+        private bool SeesOpening(RaidDefinition plan) =>
+            plan.Goal == RaidDefinition.Objective.Raid
+            && village.RelationshipTo(target) <= opportunisticMaxRelationship
+            && village.Population() >= target.Population() * outnumberRatio;
 
         private bool HasHostileTarget => target != null && village.IsHostileTo(target);
 

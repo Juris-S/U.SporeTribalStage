@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Feedback.VfxLibrary
   entries:
   - key: 1
-    prefab: {fileID: 3432958286849152088, guid: 87ee7299dd44ed747af24dbb91bcd33b, type: 3}
+    prefab: {fileID: 3432958286849152088, guid: 7c2e1d9b4a6f4c3e9b0a5d8e1f2a3b4c, type: 3}
   - key: 2
     prefab: {fileID: 6969504012699672254, guid: 130ce9cbd1c7fa247bf8acbb60fc827d, type: 3}
   - key: 3
@@ -23,3 +23,5 @@ MonoBehaviour:
     prefab: {fileID: 3696007233179127096, guid: c248f95ffea8b8543bc7ad0fffe0216d, type: 3}
   - key: 5
     prefab: {fileID: 713641606973294353, guid: 1ddea09ec04604648989cd00bf805b97, type: 3}
+  - key: 6
+    prefab: {fileID: 5880797563127281583, guid: 5b1d7c2e9a3f4e6b8c0d1a2f3e4b5c6d, type: 3}

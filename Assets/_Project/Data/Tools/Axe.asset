@@ -18,9 +18,10 @@ MonoBehaviour:
   heldPosition: {x: 0, y: 0, z: 0}
   heldEuler: {x: 0, y: 270, z: 0}
   heldForwardTilt: 0
-  heldScale: 1.2
+  heldScale: 0.6
   damage: 9
   razeDamage: 5
+  attackStyle: 1
   attackCooldown: 2
   instrument: 0
   icon: {fileID: 0}

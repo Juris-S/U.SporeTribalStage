@@ -17,6 +17,10 @@ namespace SporeTribal.Villagers
         private static readonly List<VillagerUnit> all = new List<VillagerUnit>();
         public static IReadOnlyList<VillagerUnit> All => all;
 
+        public static Material MarkerMaterial { get; private set; }
+        public static Color AttackRimColour { get; private set; }
+        public static Color AttackFillColour { get; private set; }
+
         [Tooltip("Ground ring under the villager: the material's colour when selected, the talk colours when the player is about to perform for them.")]
         [UnityEngine.Serialization.FormerlySerializedAs("selectionRing")]
         [SerializeField] private GameObject markerRing;
@@ -58,6 +62,8 @@ namespace SporeTribal.Villagers
         [SerializeField] private float runSpeedMultiplier = 2.5f;
         [Tooltip("Metres to the destination below which a villager walks instead of running, so short hops and arrivals are not a sprint.")]
         [SerializeField] private float runMinDistance = 6f;
+        [Tooltip("Below this health fraction a villager always runs, however short the trip (fleeing to heal).")]
+        [SerializeField, Range(0f, 1f)] private float hurtRunFraction = 0.4f;
         [Tooltip("Seconds between idle glances while standing still (min, max).")]
         [SerializeField] private Vector2 idleGlanceInterval = new Vector2(10f, 24f);
         [SerializeField] private float idleTurnSpeed = 90f;
@@ -97,7 +103,13 @@ namespace SporeTribal.Villagers
 
         private const float TurnStopDegrees = 50f;
         private const float TurnResumeDegrees = 15f;
+        private const float ChargeTurnBoost = 1.6f;
+        private const float ChargeTurnPace = 0.6f;
+        private const float ChargeRepathDistance = 1.5f;
         private const int WorkPriority = 40;
+        private const float MaxStepSlack = 1.3f;
+        private const float PersonalSpace = 0.8f;
+        private const float CrowdArriveDistance = 1.5f;
         private const int WanderPriority = 60;
         private const float StallGiveUpSeconds = 1.5f;
         private const float AlertScanSeconds = 0.5f;
@@ -111,6 +123,9 @@ namespace SporeTribal.Villagers
         private float baseSpeed;
         private bool turning;
         private bool charging;
+        private bool returningFromFight;
+        private bool returnStarted;
+        private Vector3 chargeGoal;
         private Color skinTone;
         private float clipUntil;
         private static readonly Dictionary<Village, float> tribeTones = new Dictionary<Village, float>();
@@ -164,6 +179,9 @@ namespace SporeTribal.Villagers
             BuildVisualRig();
             markerBlock = new MaterialPropertyBlock();
             markerRenderer = markerRing.GetComponent<Renderer>();
+            MarkerMaterial = markerRenderer.sharedMaterial;
+            AttackRimColour = attackRim;
+            AttackFillColour = attackFill;
             Health =GetComponent<Health>();
             Health.Damaged += OnDamaged;
             Health.Died += Die;
@@ -263,6 +281,7 @@ namespace SporeTribal.Villagers
             if (mourning) return;
             agent.avoidancePriority = (wanderCentre != null ? WanderPriority : WorkPriority) + priorityJitter;
             WatchStall();
+            YieldCrowdedArrival();
             agent.updateRotation = false;
             TurnToTravel();
 
@@ -273,6 +292,8 @@ namespace SporeTribal.Villagers
                 else if (IsFighting && TribeHasAttackTarget()) SetAttackTarget(true);
                 if (CanAutoDefend && NearestHostile(alertRadius, attackingOnly: true) is VillagerUnit enemy) Defend(enemy);
             }
+
+            if (returningFromFight && returnStarted && !IsMoving) returningFromFight = returnStarted = false;
 
             if (IsMoving)
             {
@@ -294,8 +315,11 @@ namespace SporeTribal.Villagers
             {
                 nextWanderTime = Time.time + Random.Range(wanderInterval.x, wanderInterval.y);
                 Vector2 offset = Random.insideUnitCircle * Home.WanderRadius;
-                if (NavMesh.SamplePosition(centre + new Vector3(offset.x, 0f, offset.y), out NavMeshHit hit, 4f, NavMesh.AllAreas))
+                if (NavMesh.SamplePosition(centre + new Vector3(offset.x, 0f, offset.y), out NavMeshHit hit, 4f, NavMesh.AllAreas) && !IsCrowded(hit.position, PersonalSpace, this))
+                {
                     agent.SetDestination(hit.position);
+                    returnStarted = returningFromFight;
+                }
                 return;
             }
 
@@ -317,9 +341,10 @@ namespace SporeTribal.Villagers
             }
         }
 
-        private bool Hurrying =>
-            (charging || (wanderCentre == null && order is TribalOrder current && current.Kind != OrderKind.Watch))
-            && (agent.destination - transform.position).sqrMagnitude > runMinDistance * runMinDistance;
+        private bool Hurrying => charging || returningFromFight || IsFighting || IsRazing || (IsHurt && wanderCentre == null) || (wanderCentre == null && order is TribalOrder current && current.Kind != OrderKind.Watch && FarFromDestination);
+
+        private bool FarFromDestination => (agent.destination - transform.position).sqrMagnitude > runMinDistance * runMinDistance;
+        private bool IsHurt => Health != null && Health.Fraction < hurtRunFraction;
 
         private float Pace => Hurrying ? baseSpeed * runSpeedMultiplier : baseSpeed;
 
@@ -342,6 +367,14 @@ namespace SporeTribal.Villagers
             }
 
             Quaternion want = Quaternion.LookRotation(to);
+            if (charging || returningFromFight)
+            {
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, want, turnSpeed * ChargeTurnBoost * Time.deltaTime);
+                turning = false;
+                agent.speed = Pace * Mathf.Lerp(1f, ChargeTurnPace, Mathf.InverseLerp(0f, 90f, Quaternion.Angle(transform.rotation, want)));
+                return;
+            }
+
             transform.rotation = Quaternion.RotateTowards(transform.rotation, want, turnSpeed * Time.deltaTime);
             float off = Quaternion.Angle(transform.rotation, want);
             turning = turning ? off > TurnResumeDegrees : off > TurnStopDegrees;
@@ -374,6 +407,7 @@ namespace SporeTribal.Villagers
 
         private void LateUpdate()
         {
+            LimitStep();
             if (!markerRing.activeSelf) return;
             Transform ring = markerRing.transform;
             Vector3 at = transform.position;
@@ -396,8 +430,84 @@ namespace SporeTribal.Villagers
             return count;
         }
 
+        private static int spawnCounter;
+        private readonly int spawnIndex = ++spawnCounter;
         private float stalledFor;
         private int priorityJitter;
+
+        private Vector3 guardPosition;
+        private bool guardReady;
+
+        private void LimitStep()
+        {
+            if (!agent.isOnNavMesh)
+            {
+                guardReady = false;
+                return;
+            }
+
+            float top = baseSpeed * runSpeedMultiplier * MaxStepSlack;
+            if (feedback.IsBusy) top *= 3f;
+            Vector3 position = transform.position;
+            Vector3 step = position - guardPosition;
+            step.y = 0f;
+            float limit = top * Time.deltaTime;
+            if (guardReady && step.sqrMagnitude > limit * limit)
+            {
+                Vector3 clamped = guardPosition + step.normalized * limit;
+                clamped.y = position.y;
+                agent.nextPosition = clamped;
+                position = transform.position;
+            }
+
+            if (agent.velocity.sqrMagnitude > top * top) agent.velocity = Vector3.ClampMagnitude(agent.velocity, top);
+            guardPosition = position;
+            guardReady = true;
+        }
+
+        public static bool IsCrowded(Vector3 point, float clearance, VillagerUnit except = null)
+        {
+            float sqr = clearance * clearance;
+            foreach (VillagerUnit other in all)
+            {
+                if (other == except || !other.IsAlive) continue;
+                Vector3 at = other.transform.position - point;
+                at.y = 0f;
+                if (at.sqrMagnitude < sqr) return true;
+                if (!other.agent.hasPath) continue;
+                Vector3 heading = other.agent.destination - point;
+                heading.y = 0f;
+                if (heading.sqrMagnitude < sqr) return true;
+            }
+            return false;
+        }
+
+        private void YieldCrowdedArrival()
+        {
+            if (charging || IsFighting || !agent.isOnNavMesh || agent.pathPending || !agent.hasPath) return;
+            if (agent.remainingDistance > CrowdArriveDistance) return;
+            Vector3 destination = agent.destination;
+            foreach (VillagerUnit other in all)
+            {
+                if (other == this || !other.IsAlive || other.IsMoving) continue;
+                Vector3 at = other.transform.position - destination;
+                at.y = 0f;
+                if (at.sqrMagnitude >= PersonalSpace * PersonalSpace) continue;
+                agent.ResetPath();
+                return;
+            }
+        }
+
+        private static NavMeshPath steerPath;
+
+        private void SteerTo(Vector3 goal)
+        {
+            steerPath ??= new NavMeshPath();
+            if (agent.isOnNavMesh && NavMesh.SamplePosition(goal, out NavMeshHit near, 2f, NavMesh.AllAreas)
+                && agent.CalculatePath(near.position, steerPath) && steerPath.status != NavMeshPathStatus.PathInvalid
+                && agent.SetPath(steerPath)) return;
+            agent.SetDestination(goal);
+        }
 
         private void WatchStall()
         {
@@ -471,7 +581,7 @@ namespace SporeTribal.Villagers
         private float AttackCooldown => Tool != null && Tool.Damage > 0 ? Tool.AttackCooldown : unarmedCooldown;
         private int RazeDamage => Tool != null && Tool.RazeDamage > 0 ? Tool.RazeDamage : unarmedRazeDamage;
 
-        private bool CanAutoDefend => !mourning && (!HasOrder || IsGathering || IsRazing);
+        private bool CanAutoDefend => !mourning && (!HasOrder || IsGathering);
 
         public void SetSelected(bool selected)
         {
@@ -572,6 +682,7 @@ namespace SporeTribal.Villagers
         {
             Cancel();
             order = null;
+            guardReady = false;
             agent.Warp(position);
         }
 
@@ -641,6 +752,7 @@ namespace SporeTribal.Villagers
             feedback.Stop();
             clipUntil = 0f;
             charging = false;
+            returningFromFight = returnStarted = false;
             model.Play(VillagerModel.Clip.Locomotion);
             fidgetYaw = 0f;
             SetTilt(0f);
@@ -784,11 +896,16 @@ namespace SporeTribal.Villagers
         {
             while (true)
             {
-                if (!CanStrike(target) || OthersAttacking(target) >= maxAttackersPerTarget)
+                bool full = CanStrike(target) && OthersAttacking(target, earlierOnly: true) >= maxAttackersPerTarget;
+                if (!CanStrike(target) || full)
                 {
-                    target = PickTarget(target);
-                    if (target == null) break;
-                    order = TribalOrder.Attack(target);
+                    VillagerUnit next = PickTarget(target);
+                    if (next == null && !full) break;
+                    if (next != null)
+                    {
+                        target = next;
+                        order = TribalOrder.Attack(target);
+                    }
                 }
 
                 if (!InReach(target, attackRange))
@@ -798,7 +915,12 @@ namespace SporeTribal.Villagers
                     model.Play(VillagerModel.Clip.Locomotion);
                     Vector3 away = transform.position - target.transform.position;
                     away.y = 0f;
-                    agent.SetDestination(target.transform.position + away.normalized * (attackRange * 0.8f));
+                    Vector3 goal = target.transform.position + away.normalized * (attackRange * 0.8f);
+                    if (!agent.hasPath || (goal - chargeGoal).sqrMagnitude > ChargeRepathDistance * ChargeRepathDistance)
+                    {
+                        SteerTo(goal);
+                        chargeGoal = goal;
+                    }
                     yield return RepathWait;
                     continue;
                 }
@@ -825,7 +947,11 @@ namespace SporeTribal.Villagers
             resumeOrder = null;
             stage = null;
             if (resume is TribalOrder job && job.CanResume) Accept(job);
-            else WanderNear(Home, 0f);
+            else
+            {
+                WanderNear(Home, 0f);
+                returningFromFight = true;
+            }
         }
 
         private static bool CanStrike(VillagerUnit target) => target != null && target.IsAlive && target.isActiveAndEnabled;
@@ -862,7 +988,7 @@ namespace SporeTribal.Villagers
         {
             if (swingTween.isAlive) swingTween.Complete();
             stage = "attacking";
-            model.Play(VillagerModel.Clip.Attack, seconds: swingSeconds);
+            model.Play(Tool != null && Tool.Style == AttackStyle.Slash ? VillagerModel.Clip.AttackSlash : VillagerModel.Clip.Attack, seconds: swingSeconds);
             swingVictim = victim;
             swingStructure = structure;
             swingStruck = false;
@@ -909,11 +1035,15 @@ namespace SporeTribal.Villagers
             return to.sqrMagnitude <= range * range;
         }
 
-        private int OthersAttacking(VillagerUnit target)
+        private int OthersAttacking(VillagerUnit target, bool earlierOnly = false)
         {
             int count = 0;
             foreach (VillagerUnit other in all)
-                if (other != this && other.order is TribalOrder o && o.Kind == OrderKind.Attack && o.Target == target) count++;
+            {
+                if (other == this || !(other.order is TribalOrder o) || o.Kind != OrderKind.Attack || o.Target != target) continue;
+                if (earlierOnly && other.spawnIndex > spawnIndex) continue;
+                count++;
+            }
             return count;
         }
 
@@ -929,7 +1059,8 @@ namespace SporeTribal.Villagers
                 float distance = Vector3.Distance(other.transform.position, transform.position);
                 if (other != current && distance > alertRadius && !InLeash(other)) continue;
                 int crowd = OthersAttacking(other);
-                float score = distance + crowd * CrowdPenalty + (crowd >= maxAttackersPerTarget ? 1000f : 0f);
+                if (crowd >= maxAttackersPerTarget) continue;
+                float score = distance + crowd * CrowdPenalty;
                 if (score < bestScore) { bestScore = score; best = other; }
             }
             return best;
@@ -967,6 +1098,7 @@ namespace SporeTribal.Villagers
             gameObject.SetActive(true);
             rig.gameObject.SetActive(true);
             rig.Follow();
+            guardReady = false;
             agent.Warp(at);
             Repaint(false);
             if (Home == null) return;

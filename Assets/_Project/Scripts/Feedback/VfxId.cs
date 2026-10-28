@@ -7,6 +7,7 @@ namespace SporeTribal.Feedback
         Death,
         PlayFight,
         Wind,
-        Music
+        Music,
+        BuildingHit
     }
 }

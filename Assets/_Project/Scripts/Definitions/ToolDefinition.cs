@@ -2,6 +2,8 @@ using UnityEngine;
 
 namespace SporeTribal.Definitions
 {
+    public enum AttackStyle { Thrust, Slash }
+
     [CreateAssetMenu(menuName = "Tribal/Tool", fileName = "Tool")]
     public class ToolDefinition : ScriptableObject
     {
@@ -22,6 +24,8 @@ namespace SporeTribal.Definitions
         [SerializeField] private int razeDamage;
         [Tooltip("Seconds between hits.")]
         [SerializeField] private float attackCooldown = 2f;
+        [Tooltip("Thrust stabs forward (staffs, spears). Slash swings across the body (axes, clubs).")]
+        [SerializeField] private AttackStyle attackStyle = AttackStyle.Thrust;
 
         [Header("Social")]
         [Tooltip("None for non-instruments. Instruments are what a band performs with.")]
@@ -47,6 +51,7 @@ namespace SporeTribal.Definitions
         public int Damage => damage;
         public int RazeDamage => razeDamage;
         public float AttackCooldown => attackCooldown;
+        public AttackStyle Style => attackStyle;
 
         public GameObject SpawnHeld(Transform hand)
         {

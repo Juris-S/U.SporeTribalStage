@@ -4,14 +4,14 @@ namespace SporeTribal.Villagers
 {
     public sealed class VillagerModel : MonoBehaviour
     {
-        public enum Clip { Locomotion, Gather, Attack, CombatIdle, Perform, Hit, Death, Dance }
+        public enum Clip { Locomotion, Gather, Attack, CombatIdle, Perform, Hit, Death, Dance, AttackSlash }
 
         private static readonly int SpeedId = Animator.StringToHash("Speed");
         private static readonly int[] StateIds =
         {
             Animator.StringToHash("Locomotion"), Animator.StringToHash("Gather"), Animator.StringToHash("Attack"),
             Animator.StringToHash("CombatIdle"), Animator.StringToHash("Perform"), Animator.StringToHash("Hit"),
-            Animator.StringToHash("Death"), Animator.StringToHash("Dance0")
+            Animator.StringToHash("Death"), Animator.StringToHash("Dance0"), Animator.StringToHash("AttackSlash")
         };
 
         [SerializeField] private Animator animator;
@@ -120,11 +120,11 @@ namespace SporeTribal.Villagers
         public void Play(Clip clip, int variant = 0, float seconds = 0f)
         {
             if (IsDead) return;
-            bool restart = clip == Clip.Dance || clip == Clip.Attack || clip == Clip.Hit;
+            bool restart = clip == Clip.Dance || clip == Clip.Attack || clip == Clip.AttackSlash || clip == Clip.Hit;
             if (clip == current && !restart) return;
             current = clip;
             int id = clip == Clip.Dance ? Animator.StringToHash("Dance" + Mathf.Clamp(variant, 0, danceCount - 1)) : StateIds[(int)clip];
-            animator.speed = clip == Clip.Attack && seconds > 0f ? attackLength / seconds : 1f;
+            animator.speed = (clip == Clip.Attack || clip == Clip.AttackSlash) && seconds > 0f ? attackLength / seconds : 1f;
             animator.CrossFadeInFixedTime(id, restart && clip != Clip.Dance ? crossFade : softCrossFade, 0, 0f);
         }
 
