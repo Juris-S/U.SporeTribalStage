@@ -144,7 +144,7 @@ namespace SporeTribal.Economy
 
         private string Subtitle() => Outcome switch
         {
-            MatchOutcome.Conquest => "The rival tribe has fallen.",
+            MatchOutcome.Conquest => "Their main hut has fallen.",
             MatchOutcome.Alliance => "The tribes stand together.",
             _ => "Your main hut has fallen.",
         };
