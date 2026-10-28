@@ -156,7 +156,7 @@ namespace SporeTribal.AI
             {
                 if (raids.Owns(unit) || !unit.NeedsShelterIn(sanctuary)) continue;
                 if (sanctuary.TryAdmit(unit)) continue;
-                if (unit.IsAttacking || !unit.IsMoving) dispatcher.Issue(unit, ClickTarget.Ground(sanctuary.Door));
+                if (unit.IsAttacking || !unit.IsMoving) dispatcher.Issue(unit, ClickTarget.Ground(sanctuary.DoorFor(unit)));
             }
         }
 
