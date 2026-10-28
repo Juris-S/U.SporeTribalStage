@@ -1,0 +1,68 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3f58f196f5c72d4fa23677adf81b8e0, type: 3}
+  m_Name: EnvironmentBakeSettings
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::SporeTribal.EditorTools.EnvironmentBakeSettings
+  cloudShadows: {fileID: 2800000, guid: a0998fdd01f03604e8ae72f9d823a87f, type: 3}
+  terrainDetailFolder: {fileID: 102900000, guid: a059688f06c07cf45a31a2129a412214, type: 3}
+  trees:
+  - {fileID: 919132149155446097, guid: 928b5ca1463cf624f9c72c8e57547d99, type: 3}
+  - {fileID: 919132149155446097, guid: a148055e2ea43e44f8022a7a0cea806c, type: 3}
+  - {fileID: 919132149155446097, guid: 6341d01bab16f134a88dfd9e310d13e3, type: 3}
+  - {fileID: 919132149155446097, guid: 4c445f50f180d5e45ade2d9ca3dc2897, type: 3}
+  - {fileID: 919132149155446097, guid: de9df2212dc2aa64f80f5d8897233542, type: 3}
+  - {fileID: 919132149155446097, guid: bc42ec59c9fb9b9498f87e0581665e9d, type: 3}
+  - {fileID: 919132149155446097, guid: 7a86ebc7845863943b56ff7abad65a8f, type: 3}
+  - {fileID: 919132149155446097, guid: 0af6a32cf1d8c7d46bb61ceb9a2be519, type: 3}
+  - {fileID: 919132149155446097, guid: 13f21d4095075154da857b5346927a84, type: 3}
+  bareTrees:
+  - {fileID: 919132149155446097, guid: 559da914e49f5f14bae7aeaa75e51450, type: 3}
+  - {fileID: 919132149155446097, guid: 0ad25408d1acb1644b3224115ae1d7af, type: 3}
+  - {fileID: 919132149155446097, guid: 403fa3a5d367e094098658463aa3db25, type: 3}
+  rocks:
+  - {fileID: 919132149155446097, guid: 4fc1467e1e56b2142a1e3f4d951e96bf, type: 3}
+  - {fileID: 919132149155446097, guid: d5265d46ea7605a4dbf89baff4f4f106, type: 3}
+  - {fileID: 919132149155446097, guid: e2c49a281a8a7d14a82d5b1a7889e211, type: 3}
+  - {fileID: 919132149155446097, guid: 88f55223bb2a8f248b2d9e0643632e5a, type: 3}
+  - {fileID: 919132149155446097, guid: f1ddcc1cad6ca47448cb9f78d1750aae, type: 3}
+  - {fileID: 919132149155446097, guid: d5d11c86d06494644a536ff2fa85a380, type: 3}
+  - {fileID: 919132149155446097, guid: b78d7a7b32234ee4fbab9bb0f49eaf9e, type: 3}
+  - {fileID: 919132149155446097, guid: aad4999e7d7004f488bd9e6f98f33891, type: 3}
+  bushes:
+  - {fileID: 919132149155446097, guid: bbde0851f01132446a363aac1d1c1291, type: 3}
+  - {fileID: 919132149155446097, guid: faa556b60b8cb2942816d5ee25558b35, type: 3}
+  grassTufts:
+  - {fileID: 919132149155446097, guid: b3c7287471b813a4493308f7178f40a8, type: 3}
+  - {fileID: 919132149155446097, guid: fcdac9c668cd11b43a4a8f34b24b8168, type: 3}
+  - {fileID: 919132149155446097, guid: e6d34c3a2a94e5147ad761832b905076, type: 3}
+  - {fileID: 919132149155446097, guid: b46b3af6f7fd05c49b23779d8625d2af, type: 3}
+  - {fileID: 919132149155446097, guid: cd98463948237d44d9aff9533889e645, type: 3}
+  - {fileID: 919132149155446097, guid: 47d6eba2344ef4044b5815e133a6c172, type: 3}
+  - {fileID: 919132149155446097, guid: 840c7a69264a5994f9ccbe5c6ae535ff, type: 3}
+  forestMaterial: {fileID: 2100000, guid: f5174e0db4ef57a4699a280a34bd1a53, type: 2}
+  groundMaterial: {fileID: 2100000, guid: dfaea73bc1d8af8458fa26fb2763cff1, type: 2}
+  grassMaterial: {fileID: 2100000, guid: 6aeccb5ba54a6d94bb53b0177ff3be0b, type: 2}
+  treeFoliage: {fileID: 2100000, guid: a80995da398410f4ca761624087c54d5, type: 2}
+  bushFoliage: {fileID: 2100000, guid: 6e2134f89afe0364dab93a4704d382b2, type: 2}
+  groundMask: {fileID: 2800000, guid: 64de93638c6392c43b1616547693e20c, type: 3}
+  grassMeshFolder: {fileID: 102900000, guid: 9e421f663c12bc348a29a252ee866df8, type: 3}
+  seed: 7
+  halfSize: 72
+  forestEdge: 52
+  grassChunk: 24
+  maskResolution: 512
+  maskSize: 150
+  buildingClearance: 7
+  villageClearance: 9
+  foodClearance: 4
+  pathHalfWidth: 5
+  grassClearanceTrim: -3.5

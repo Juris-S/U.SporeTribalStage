@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using SporeTribal.Feedback;
 using SporeTribal.Villagers;
 using UnityEngine;
 
@@ -18,10 +19,12 @@ namespace SporeTribal.Economy
         [SerializeField] private float ringSize = 3f;
         [SerializeField, ColorUsage(true, true)] private Color ringColor = new Color(1f, 1f, 1f, 0.35f);
 
+        private const float RingLift = 0.03f;
+        private const float MinScale = 0.01f;
+
         private int food;
         private float regrowAt;
         private GameObject ring;
-        private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
 
         public StandingSpots Spots { get; private set; }
         public int Food => food;
@@ -32,20 +35,16 @@ namespace SporeTribal.Economy
         {
             food = maxFood;
             Spots = new StandingSpots(transform, maxGatherers);
-            ring = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            Destroy(ring.GetComponent<Collider>());
-            ring.name = "TargetRing";
-            ring.transform.SetParent(transform, false);
-            ring.transform.SetPositionAndRotation(new Vector3(transform.position.x, 0.03f, transform.position.z), Quaternion.Euler(90f, 0f, 0f));
-            ring.transform.localScale = Vector3.one * ringSize / Mathf.Max(transform.lossyScale.x, 0.01f);
-            MeshRenderer r = ring.GetComponent<MeshRenderer>();
-            r.sharedMaterial = ringMaterial;
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            r.receiveShadows = false;
-            MaterialPropertyBlock block = new MaterialPropertyBlock();
-            block.SetColor(RimColorId, ringColor);
-            r.SetPropertyBlock(block);
-            ring.SetActive(false);
+            ring = CreateTargetRing();
+        }
+
+        private GameObject CreateTargetRing()
+        {
+            Transform target = GroundRing.Create("TargetRing", ringMaterial, ringColor, transform).transform;
+            target.position = new Vector3(transform.position.x, RingLift, transform.position.z);
+            target.localScale = Vector3.one * ringSize / Mathf.Max(transform.lossyScale.x, MinScale);
+            target.gameObject.SetActive(false);
+            return target.gameObject;
         }
         private void OnEnable() => all.Add(this);
         private void OnDisable() => all.Remove(this);

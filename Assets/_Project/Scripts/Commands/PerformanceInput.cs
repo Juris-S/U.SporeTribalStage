@@ -1,5 +1,6 @@
 using SporeTribal.AI;
 using SporeTribal.Definitions;
+using SporeTribal.Inputs;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,34 +10,45 @@ namespace SporeTribal.Commands
     {
         [SerializeField] private SocialPerformanceDirector director;
 
-        [Header("Keys")]
-        [SerializeField] private Key hornKey = Key.Digit1;
-        [SerializeField] private Key maracaKey = Key.Digit2;
-        [SerializeField] private Key didgeridooKey = Key.Digit3;
-        [Tooltip("Gift food to the rival (hold Shift for the large gift).")]
-        [SerializeField] private Key giftKey = Key.G;
-        [SerializeField] private Key soothingSongKey = Key.H;
+        private static TribalControls.DiplomacyActions Actions => GameInput.Controls.Diplomacy;
 
-        private void Update()
+        private void OnEnable()
         {
-            Keyboard keyboard = Keyboard.current;
-            if (keyboard == null) return;
-
-            if (director.Current == SocialPerformanceDirector.State.Calling)
-            {
-                if (keyboard[hornKey].wasPressedThisFrame) SubmitHeld(InstrumentKind.Horn);
-                if (keyboard[maracaKey].wasPressedThisFrame) SubmitHeld(InstrumentKind.Maraca);
-                if (keyboard[didgeridooKey].wasPressedThisFrame) SubmitHeld(InstrumentKind.Didgeridoo);
-            }
-            if (keyboard[giftKey].wasPressedThisFrame && !director.Gift(keyboard.shiftKey.isPressed))
-                Debug.Log("[Diplomacy] Gift not sent: not enough food or no rival set.");
-            if (keyboard[soothingSongKey].wasPressedThisFrame && !director.SingSoothingSong())
-                Debug.Log("[Diplomacy] The soothing song needs a living chieftain.");
+            Actions.Horn.performed += OnHorn;
+            Actions.Maraca.performed += OnMaraca;
+            Actions.Didgeridoo.performed += OnDidgeridoo;
+            Actions.Gift.performed += OnGift;
+            Actions.SoothingSong.performed += OnSoothingSong;
         }
 
-        private void SubmitHeld(InstrumentKind kind)
+        private void OnDisable()
         {
+            Actions.Horn.performed -= OnHorn;
+            Actions.Maraca.performed -= OnMaraca;
+            Actions.Didgeridoo.performed -= OnDidgeridoo;
+            Actions.Gift.performed -= OnGift;
+            Actions.SoothingSong.performed -= OnSoothingSong;
+        }
+
+        private void OnHorn(InputAction.CallbackContext _) => Answer(InstrumentKind.Horn);
+        private void OnMaraca(InputAction.CallbackContext _) => Answer(InstrumentKind.Maraca);
+        private void OnDidgeridoo(InputAction.CallbackContext _) => Answer(InstrumentKind.Didgeridoo);
+
+        private void Answer(InstrumentKind kind)
+        {
+            if (director.Current != SocialPerformanceDirector.State.Calling) return;
             if (director.MatchingCount(kind) > 0) director.Submit(kind);
+        }
+
+        private void OnGift(InputAction.CallbackContext _)
+        {
+            bool large = Actions.LargeGiftModifier.IsPressed();
+            if (!director.Gift(large)) Debug.Log("[Diplomacy] Gift not sent: not enough food or no rival set.");
+        }
+
+        private void OnSoothingSong(InputAction.CallbackContext _)
+        {
+            if (!director.SingSoothingSong()) Debug.Log("[Diplomacy] The soothing song needs a living chieftain.");
         }
     }
 }

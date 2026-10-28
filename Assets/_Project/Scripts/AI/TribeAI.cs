@@ -32,6 +32,7 @@ namespace SporeTribal.AI
         private TribeRaidDirector raids;
         private readonly List<VillagerUnit> members = new List<VillagerUnit>();
         private readonly List<VillagerUnit> fit = new List<VillagerUnit>();
+        private readonly List<VillagerUnit> defenders = new List<VillagerUnit>();
         private float nextThink;
         private bool provoked;
 
@@ -46,58 +47,66 @@ namespace SporeTribal.AI
         {
             if (Time.time < nextThink) return;
             nextThink = Time.time + thinkSeconds;
+            Think();
+        }
 
+        private void Think()
+        {
             if (village.HasSurrendered)
             {
-                raids.StandDown();
-                enabled = false;
+                StandDown();
                 return;
             }
 
-            members.Clear();
-            fit.Clear();
-            foreach (VillagerUnit unit in VillagerUnit.All)
-            {
-                if (unit.Home != village) continue;
-                members.Add(unit);
-                if (!NeedsShelter(unit)) fit.Add(unit);
-            }
-
-            if (temper == Temper.Peaceful && provoked)
-            {
-                temper = Temper.Aggressive;
-                raids.Revenge(Random.Range(revengeDelay.x, revengeDelay.y));
-            }
-
+            RefreshMembers();
+            RetaliateIfProvoked();
             if (temper == Temper.Aggressive) raids.Tick(fit);
             Shelter();
-            if (Defend()) return;
-            Gather();
+            if (!Defend()) Gather();
         }
 
-        private bool Busy(VillagerUnit unit) => raids.Owns(unit) || NeedsShelter(unit) || unit.IsAttending;
+        private void StandDown()
+        {
+            raids.StandDown();
+            enabled = false;
+        }
 
-        private bool NeedsShelter(VillagerUnit unit) => sanctuary != null && sanctuary.NeedsShelter(unit);
+        private void RefreshMembers()
+        {
+            village.CollectMembers(members);
+            fit.Clear();
+            foreach (VillagerUnit unit in members)
+                if (!unit.NeedsShelterIn(sanctuary)) fit.Add(unit);
+        }
+
+        private void RetaliateIfProvoked()
+        {
+            if (temper != Temper.Peaceful || !provoked) return;
+            temper = Temper.Aggressive;
+            raids.Revenge(Random.Range(revengeDelay.x, revengeDelay.y));
+        }
+
+        private bool IsBusy(VillagerUnit unit) => raids.Owns(unit) || unit.NeedsShelterIn(sanctuary) || unit.IsAttending;
 
         private void Shelter()
         {
             if (sanctuary == null) return;
             foreach (VillagerUnit unit in members)
             {
-                if (raids.Owns(unit) || !sanctuary.NeedsShelter(unit)) continue;
-                if (!unit.IsMoving && sanctuary.AtDoor(unit)) sanctuary.Admit(unit);
-                else if (unit.IsAttacking || !unit.IsMoving) dispatcher.Issue(new[] { unit }, ClickTarget.Ground(sanctuary.Door));
+                if (raids.Owns(unit) || !unit.NeedsShelterIn(sanctuary)) continue;
+                if (sanctuary.TryAdmit(unit)) continue;
+                if (unit.IsAttacking || !unit.IsMoving) dispatcher.Issue(unit, ClickTarget.Ground(sanctuary.Door));
             }
         }
 
         private bool Defend()
         {
-            VillagerUnit intruder = NearestHostile(village.DropOffCentre, defendRadius);
+            VillagerUnit intruder = village.NearestHostileAttacker(village.DropOffCentre, defendRadius);
             if (intruder == null) return false;
 
-            var defenders = new List<VillagerUnit>();
+            defenders.Clear();
             foreach (VillagerUnit unit in members)
-                if (!unit.IsFighting && !Busy(unit)) defenders.Add(unit);
+                if (!unit.IsFighting && !IsBusy(unit)) defenders.Add(unit);
             if (defenders.Count > 0) dispatcher.Issue(defenders, ClickTarget.Villager(intruder));
             return true;
         }
@@ -106,24 +115,11 @@ namespace SporeTribal.AI
         {
             foreach (VillagerUnit unit in members)
             {
-                if (unit.HasOrder || Busy(unit)) continue;
+                if (unit.HasOrder || IsBusy(unit)) continue;
                 FoodNode node = FoodNode.Nearest(village.DropOffCentre, gatherRadius);
                 if (node == null) return;
-                dispatcher.Issue(new[] { unit }, ClickTarget.Resource(node, node.transform.position));
+                dispatcher.Issue(unit, ClickTarget.Resource(node, node.transform.position));
             }
-        }
-
-        private VillagerUnit NearestHostile(Vector3 from, float radius)
-        {
-            VillagerUnit best = null;
-            float bestSqr = radius * radius;
-            foreach (VillagerUnit unit in VillagerUnit.All)
-            {
-                if (!village.IsHostileTo(unit.Home) || !unit.IsAttacking) continue;
-                float sqr = (unit.transform.position - from).sqrMagnitude;
-                if (sqr < bestSqr) { bestSqr = sqr; best = unit; }
-            }
-            return best;
         }
     }
 }

@@ -1,6 +1,7 @@
-using SporeTribal.Commands;
+using System;
 using SporeTribal.Economy;
 using SporeTribal.Orders;
+using SporeTribal.Utilities;
 using SporeTribal.Villagers;
 using UnityEngine;
 
@@ -12,62 +13,45 @@ namespace SporeTribal.AI
 
         private const float ArriveSlack = 2f;
 
+        private readonly RaidContext context;
         private readonly VillagerUnit thief;
-        private readonly OrderDispatcher dispatcher;
-        private readonly Village home;
-        private readonly Village target;
         private readonly int stealAmount;
-        private readonly System.Action<Vector3> intercepted;
+        private readonly Action<Vector3> intercepted;
         private int carried;
         private Phase phase;
 
-        public FoodThiefController(VillagerUnit thief, OrderDispatcher dispatcher, Village home, Village target, int stealAmount, System.Action<Vector3> intercepted)
+        public FoodThiefController(RaidContext context, VillagerUnit thief, int stealAmount, Action<Vector3> intercepted)
         {
+            this.context = context;
             this.thief = thief;
-            this.dispatcher = dispatcher;
-            this.home = home;
-            this.target = target;
             this.stealAmount = stealAmount;
             this.intercepted = intercepted;
-            thief.Health.Damaged += OnHit;
-            RunTo(target);
-            phase = Phase.ToStore;
         }
 
         public bool IsOver => phase == Phase.Done;
 
         public bool Owns(VillagerUnit unit) => unit == thief;
 
+        public void Begin()
+        {
+            thief.Health.Damaged += OnHit;
+            phase = Phase.ToStore;
+            RunTo(context.Target);
+        }
+
         public void Tick()
         {
             if (thief == null || !thief.IsAlive)
             {
-                if (carried > 0) target.Deposit(carried);
-                carried = 0;
+                ReturnLoot();
                 phase = Phase.Done;
                 return;
             }
 
             switch (phase)
             {
-                case Phase.ToStore:
-                    if (!home.IsHostileTo(target)) Flee();
-                    else if (Arrived(target))
-                    {
-                        carried = target.Withdraw(stealAmount);
-                        Flee();
-                    }
-                    else if (!thief.IsMoving) RunTo(target);
-                    break;
-                case Phase.Fleeing:
-                    if (Arrived(home))
-                    {
-                        home.Deposit(carried);
-                        carried = 0;
-                        phase = Phase.Done;
-                    }
-                    else if (!thief.IsMoving) RunTo(home);
-                    break;
+                case Phase.ToStore: TickToStore(); break;
+                case Phase.Fleeing: TickFleeing(); break;
             }
         }
 
@@ -77,32 +61,65 @@ namespace SporeTribal.AI
             phase = Phase.Done;
         }
 
+        private void TickToStore()
+        {
+            if (!context.IsStillHostile) Flee();
+            else if (HasArrived(context.Target)) Steal();
+            else if (!thief.IsMoving) RunTo(context.Target);
+        }
+
+        private void TickFleeing()
+        {
+            if (HasArrived(context.Home)) Escape();
+            else if (!thief.IsMoving) RunTo(context.Home);
+        }
+
+        private void Steal()
+        {
+            carried = context.Target.Withdraw(stealAmount);
+            Flee();
+        }
+
+        private void Escape()
+        {
+            context.Home.Deposit(carried);
+            carried = 0;
+            phase = Phase.Done;
+        }
+
         private void OnHit(GameObject source)
         {
             if (carried > 0)
             {
-                target.Deposit(carried);
-                carried = 0;
+                ReturnLoot();
                 intercepted?.Invoke(thief.transform.position);
             }
             if (phase == Phase.ToStore) Flee();
         }
 
+        private void ReturnLoot()
+        {
+            if (carried > 0) context.Target.Deposit(carried);
+            carried = 0;
+        }
+
         private void Flee()
         {
             phase = Phase.Fleeing;
-            RunTo(home);
+            RunTo(context.Home);
         }
 
-        private void RunTo(Village village) => dispatcher.Issue(new[] { thief }, ClickTarget.Ground(village.DropOffCentre));
+        private void RunTo(Village village)
+        {
+            ClickTarget destination = ClickTarget.Ground(village.DropOffCentre);
+            context.Dispatcher.Issue(thief, destination);
+        }
 
-        private bool Arrived(Village village)
+        private bool HasArrived(Village village)
         {
             if (thief.IsMoving) return false;
-            Vector3 to = thief.transform.position - village.DropOffCentre;
-            to.y = 0f;
             float reach = village.DropOffRadius + ArriveSlack;
-            return to.sqrMagnitude <= reach * reach;
+            return thief.transform.position.IsWithinFlat(village.DropOffCentre, reach);
         }
     }
 }

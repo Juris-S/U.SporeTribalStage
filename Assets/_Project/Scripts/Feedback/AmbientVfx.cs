@@ -5,7 +5,7 @@ namespace SporeTribal.Feedback
 {
     public class AmbientVfx : MonoBehaviour
     {
-        [SerializeField] private VfxKey effect = VfxKey.Wind;
+        [SerializeField] private VfxId effect = VfxId.Wind;
         [SerializeField] private RTSCameraController cameraController;
         [Tooltip("Height above the ground point under the camera focus.")]
         [SerializeField] private float height = 1.5f;
@@ -14,7 +14,7 @@ namespace SporeTribal.Feedback
 
         private void Start()
         {
-            GameObject instance = VfxPlayer.Play(effect, Anchor(), 0f);
+            GameObject instance = VfxPlayer.PlayPersistent(effect, Anchor());
             if (instance != null) spawned = instance.transform;
         }
 

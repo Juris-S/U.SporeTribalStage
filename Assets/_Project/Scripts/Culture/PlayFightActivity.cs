@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace SporeTribal.Culture
 {
-    [CreateAssetMenu(menuName = "SporeTribal/Culture/Play Fight", fileName = "PlayFight")]
+    [CreateAssetMenu(menuName = "Tribal/Culture/Play Fight", fileName = "PlayFight")]
     public class PlayFightActivity : CultureActivity
     {
         [Header("Play fight")]
@@ -17,16 +17,16 @@ namespace SporeTribal.Culture
         [SerializeField] private float pairSpacing = 4f;
         [Tooltip("Seconds per push. A round is both partners pushing once.")]
         [SerializeField] private float beatSeconds = 0.9f;
-        [SerializeField] private float lungeDistance = 0.35f;
-        [SerializeField] private float staggerDistance = 0.8f;
-        [SerializeField] private float lungeTilt = 8f;
-        [SerializeField] private float staggerTilt = -20f;
+        [Tooltip("The pusher stepping in.")]
+        [SerializeField] private ShoveMotion lunge = new ShoveMotion { distance = 0.35f, tilt = 8f };
+        [Tooltip("The pushed partner reeling back.")]
+        [SerializeField] private ShoveMotion stagger = new ShoveMotion { distance = 0.8f, tilt = -20f };
         [Tooltip("Delay between the pusher lunging and the pushed one reeling.")]
         [SerializeField] private float impactDelay = 0.12f;
 
         [Header("Effects")]
         [Tooltip("Looping effect played between each pair while they play fight.")]
-        [SerializeField] private VfxKey fightEffect = VfxKey.PlayFight;
+        [SerializeField] private VfxId fightEffect = VfxId.PlayFight;
         [SerializeField] private float effectHeight = 1f;
 
         public PlayFightActivity()
@@ -91,13 +91,13 @@ namespace SporeTribal.Culture
             public void Push(bool firstPushes)
             {
                 if (!Ready(out Vector3 toward, firstPushes)) return;
-                (firstPushes ? first : second).Shove(toward, owner.lungeDistance, owner.impactDelay * 2f, owner.lungeTilt);
+                (firstPushes ? first : second).Shove(toward, owner.lunge.distance, owner.impactDelay * 2f, owner.lunge.tilt);
             }
 
             public void Reel(bool firstPushes)
             {
                 if (!Ready(out Vector3 toward, firstPushes)) return;
-                (firstPushes ? second : first).Shove(toward, owner.staggerDistance, owner.beatSeconds * 0.6f, owner.staggerTilt);
+                (firstPushes ? second : first).Shove(toward, owner.stagger.distance, owner.beatSeconds * 0.6f, owner.stagger.tilt);
             }
 
             private bool Ready(out Vector3 toward, bool firstPushes)

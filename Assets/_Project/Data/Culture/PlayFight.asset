@@ -52,10 +52,12 @@ MonoBehaviour:
   partnerGap: 1.3
   pairSpacing: 4
   beatSeconds: 0.9
-  lungeDistance: 0.35
-  staggerDistance: 0.8
-  lungeTilt: 8
-  staggerTilt: -20
+  lunge:
+    distance: 0.35
+    tilt: 8
+  stagger:
+    distance: 0.8
+    tilt: -20
   impactDelay: 0.12
   fightEffect: 3
   effectHeight: 1

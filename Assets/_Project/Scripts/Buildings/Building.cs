@@ -1,8 +1,8 @@
-using PrimeTween;
-using SporeTribal.Villagers;
 using System.Collections.Generic;
+using PrimeTween;
 using SporeTribal.Combat;
 using SporeTribal.Economy;
+using SporeTribal.Villagers;
 using UnityEngine;
 
 namespace SporeTribal.Buildings
@@ -24,6 +24,22 @@ namespace SporeTribal.Buildings
         public Health Health { get; private set; }
         public bool IsStanding => Health.IsAlive;
 
+        public static Building NearestStanding(Village owner, Vector3 from, bool includeMainHut)
+        {
+            Building nearest = null;
+            float nearestSqr = float.MaxValue;
+            foreach (Building building in all)
+            {
+                if (building.Owner != owner || !building.IsStanding) continue;
+                if (!includeMainHut && building is MainHut) continue;
+                float sqr = (building.transform.position - from).sqrMagnitude;
+                if (sqr >= nearestSqr) continue;
+                nearestSqr = sqr;
+                nearest = building;
+            }
+            return nearest;
+        }
+
         protected virtual void Awake()
         {
             Spots = new StandingSpots(transform);
@@ -38,9 +54,8 @@ namespace SporeTribal.Buildings
         private void OnDamaged(GameObject source)
         {
             if (owner == null) return;
-            VillagerUnit attacker = source != null ? source.GetComponent<VillagerUnit>() : null;
-            owner.ReportAttack(transform.position, attacker != null ? attacker.Home : null);
-            if (attacker != null && owner.IsHostileTo(attacker.Home)) VillagerUnit.CallForHelp(owner, transform.position, attacker);
+            VillagerUnit attacker = source != null && source.TryGetComponent(out VillagerUnit unit) ? unit : null;
+            owner.ReportAttack(transform.position, attacker);
         }
 
         protected virtual void Collapse()

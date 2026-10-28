@@ -11,9 +11,9 @@ namespace SporeTribal.Feedback
         private float endTime;
         private bool ending;
 
-        public static void Spawn(VfxKey key, Vector3 position, float seconds, params VillagerUnit[] units)
+        public static void Spawn(VfxId id, Vector3 position, float seconds, params VillagerUnit[] units)
         {
-            GameObject instance = VfxPlayer.Play(key, position, seconds + EndGrace);
+            GameObject instance = VfxPlayer.Play(id, position, seconds + EndGrace);
             if (instance == null) return;
             var effect = instance.AddComponent<ActivityEffect>();
             effect.units = units;

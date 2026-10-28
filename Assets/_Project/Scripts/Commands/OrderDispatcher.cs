@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using SporeTribal.AI;
 using SporeTribal.Economy;
 using SporeTribal.Orders;
+using SporeTribal.Utilities;
 using SporeTribal.Villagers;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace SporeTribal.Commands
 {
@@ -16,6 +16,16 @@ namespace SporeTribal.Commands
         [SerializeField] private SocialPerformanceDirector performances;
 
         public event System.Action<IReadOnlyList<VillagerUnit>, Vector3[], int[]> OrderIssued;
+
+        private readonly VillagerUnit[] single = new VillagerUnit[1];
+
+        public OrderBatch Issue(VillagerUnit unit, ClickTarget target)
+        {
+            single[0] = unit;
+            OrderBatch batch = Issue(single, target);
+            single[0] = null;
+            return batch;
+        }
 
         public OrderBatch Issue(IReadOnlyList<VillagerUnit> units, ClickTarget target)
         {
@@ -56,11 +66,7 @@ namespace SporeTribal.Commands
         {
             Vector3[] slots = CircleFormation.GetSlots(point, movers.Count, slotSpacing);
 
-            for (int i = 0; i < slots.Length; i++)
-            {
-                if (NavMesh.SamplePosition(slots[i], out NavMeshHit hit, navMeshSampleRadius, NavMesh.AllAreas))
-                    slots[i] = hit.position;
-            }
+            for (int i = 0; i < slots.Length; i++) slots[i] = NavMeshUtility.Snap(slots[i], navMeshSampleRadius);
 
             int[] assignment = SlotAssignment.Match(movers, slots);
             PutChieftainAtHead(movers, slots, assignment, point);

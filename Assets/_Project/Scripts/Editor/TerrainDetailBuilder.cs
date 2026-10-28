@@ -5,17 +5,24 @@ namespace SporeTribal.EditorTools
 {
     public static class TerrainDetailBuilder
     {
-        private const string Folder = "Assets/_Project/Art/Textures/TerrainDetail";
         private const int Size = 512;
 
-        [MenuItem("Tools/Spore/Build Terrain Detail Textures")]
+        [MenuItem("Tools/Tribal/Build Terrain Detail Textures")]
         public static void BuildAll()
         {
-            Save("TerrainDetail_Grass", Normalise(Grass(), 0.51f, 0.03f));
-            Save("TerrainDetail_Ground", Normalise(Ground(), 0.48f, 0.1f));
-            Save("TerrainDetail_Sand", Normalise(Sand(), 0.49f, 0.05f));
-            Save("TerrainDetail_Gravel", Normalise(Gravel(), 0.49f, 0.11f));
-            Save("TerrainDetail_Cliff", Normalise(Cliff(), 0.55f, 0.11f));
+            if (!EnvironmentBakeSettings.TryFind(out EnvironmentBakeSettings settings)) return;
+            string folder = settings.TerrainDetailFolder;
+            if (string.IsNullOrEmpty(folder))
+            {
+                Debug.LogError("EnvironmentBakeSettings has no Terrain Detail Folder.", settings);
+                return;
+            }
+
+            Save(folder, "TerrainDetail_Grass", Normalise(Grass(), 0.51f, 0.03f));
+            Save(folder, "TerrainDetail_Ground", Normalise(Ground(), 0.48f, 0.1f));
+            Save(folder, "TerrainDetail_Sand", Normalise(Sand(), 0.49f, 0.05f));
+            Save(folder, "TerrainDetail_Gravel", Normalise(Gravel(), 0.49f, 0.11f));
+            Save(folder, "TerrainDetail_Cliff", Normalise(Cliff(), 0.55f, 0.11f));
         }
 
         private static float[] Grass()
@@ -70,7 +77,7 @@ namespace SporeTribal.EditorTools
             var o = new float[a.Length];
             for (int y = 0; y < Size; y++)
                 for (int x = 0; x < Size; x++)
-                    o[y * Size + x] = a[y * Size + x] + (Hash(x, y, Size, seed) - 0.5f) * 3.46f * amount;
+                    o[y * Size + x] = a[y * Size + x] + (TileableNoise.Hash(x, y, Size, seed) - 0.5f) * 3.46f * amount;
             return o;
         }
 
@@ -125,30 +132,8 @@ namespace SporeTribal.EditorTools
             return o;
         }
 
-        private static void Save(string name, float[] a)
-        {
-            var pixels = new Color32[a.Length];
-            for (int i = 0; i < a.Length; i++)
-            {
-                byte b = (byte)(a[i] * 255f);
-                pixels[i] = new Color32(b, b, b, 255);
-            }
-
-            string path = Folder + "/" + name + ".png";
-            var tex = new Texture2D(Size, Size, TextureFormat.RGBA32, false, true);
-            tex.SetPixels32(pixels);
-            System.IO.Directory.CreateDirectory(Folder);
-            System.IO.File.WriteAllBytes(path, tex.EncodeToPNG());
-            Object.DestroyImmediate(tex);
-            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-
-            var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-            importer.wrapMode = TextureWrapMode.Repeat;
-            importer.sRGBTexture = false;
-            importer.mipmapEnabled = true;
-            importer.alphaSource = TextureImporterAlphaSource.None;
-            importer.SaveAndReimport();
-        }
+        private static void Save(string folder, string name, float[] a) =>
+            TextureBaking.SaveTileableGreyscale($"{folder}/{name}.png", a, Size);
 
         private static float Fbm(float u, float v, int basePeriod, int octaves, float gain, int seed)
         {
@@ -156,7 +141,7 @@ namespace SporeTribal.EditorTools
             int period = basePeriod;
             for (int o = 0; o < octaves; o++)
             {
-                n += PeriodicNoise(u * period, v * period, period, seed * 16 + o) * amp;
+                n += TileableNoise.Value(u * period, v * period, period, seed * 16 + o) * amp;
                 total += amp;
                 period *= 2;
                 amp *= gain;
@@ -174,40 +159,13 @@ namespace SporeTribal.EditorTools
             for (int j = -1; j <= 1; j++)
                 for (int i = -1; i <= 1; i++)
                 {
-                    float fx = cx + i + Hash(cx + i, cy + j, cells, seed) - px;
-                    float fy = cy + j + Hash(cx + i, cy + j, cells, seed + 1) - py;
+                    float fx = cx + i + TileableNoise.Hash(cx + i, cy + j, cells, seed) - px;
+                    float fy = cy + j + TileableNoise.Hash(cx + i, cy + j, cells, seed + 1) - py;
                     float d = Mathf.Sqrt(fx * fx + fy * fy);
                     if (d < f1) { f2 = f1; f1 = d; }
                     else if (d < f2) f2 = d;
                 }
             return 1f - Mathf.SmoothStep(0f, 1f, (f2 - f1) / width);
-        }
-
-        private static float PeriodicNoise(float x, float y, int period, int octave)
-        {
-            int x0 = Mathf.FloorToInt(x), y0 = Mathf.FloorToInt(y);
-            float fx = x - x0, fy = y - y0;
-            fx = fx * fx * (3f - 2f * fx);
-            fy = fy * fy * (3f - 2f * fy);
-
-            float a = Hash(x0, y0, period, octave);
-            float b = Hash(x0 + 1, y0, period, octave);
-            float c = Hash(x0, y0 + 1, period, octave);
-            float d = Hash(x0 + 1, y0 + 1, period, octave);
-            return Mathf.Lerp(Mathf.Lerp(a, b, fx), Mathf.Lerp(c, d, fx), fy);
-        }
-
-        private static float Hash(int x, int y, int period, int octave)
-        {
-            x = ((x % period) + period) % period;
-            y = ((y % period) + period) % period;
-            unchecked
-            {
-                uint h = (uint)(x * 374761393 + y * 668265263 + octave * 2147483647);
-                h = (h ^ (h >> 13)) * 1274126177u;
-                h ^= h >> 16;
-                return (h & 0xFFFFFF) / (float)0xFFFFFF;
-            }
         }
     }
 }

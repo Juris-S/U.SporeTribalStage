@@ -1,66 +1,59 @@
+using System;
 using System.Collections.Generic;
 using SporeTribal.Commands;
 using SporeTribal.Definitions;
 using SporeTribal.Economy;
+using SporeTribal.Inputs;
 using SporeTribal.Villagers;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Random = UnityEngine.Random;
 
 namespace SporeTribal.AI
 {
     [RequireComponent(typeof(Village))]
     public class TribeRaidDirector : MonoBehaviour
     {
-        private const float ForcedRetrySeconds = 2f;
-
-        public enum Alert { FoodRaidersComing, RaidersComing, ThiefIntercepted }
-
         [SerializeField] private OrderDispatcher dispatcher;
         [Tooltip("The tribe this one raids.")]
         [SerializeField] private Village target;
         [SerializeField] private RaidDefinition[] plans;
         [Tooltip("Villagers always kept home to gather and defend.")]
         [SerializeField] private int minHomeGuard = 2;
+        [SerializeField] private MusterSettings muster = new MusterSettings();
 
-        [Header("Muster")]
-        [Tooltip("Where raid squads group up before setting off.")]
-        [SerializeField] private Transform rallyPoint;
-        [SerializeField] private float rallyRadius = 4f;
-        [Tooltip("A squad sets off once everyone has rallied, or after this many seconds.")]
-        [SerializeField] private float musterTimeout = 25f;
-
-        [Header("Debug")]
-        [Tooltip("Launch the first Raid plan straight away (handy when filming).")]
-        [SerializeField] private Key raidNowKey = Key.F2;
-        [Tooltip("Launch the first StealFood plan straight away.")]
-        [SerializeField] private Key stealNowKey = Key.F3;
-
-        public event System.Action<Village, Alert, Vector3> Alerted;
+        public event Action<Village, RaidAlert, Vector3> Alerted;
 
         private Village village;
-        private float[] nextCheck;
-        private bool[] armed;
-        private bool[] forced;
+        private readonly List<RaidPlanSchedule> schedules = new List<RaidPlanSchedule>();
         private readonly Dictionary<RaidDefinition, IRaidRun> running = new Dictionary<RaidDefinition, IRaidRun>();
         private readonly List<RaidDefinition> finished = new List<RaidDefinition>();
+        private readonly List<VillagerUnit> candidates = new List<VillagerUnit>();
 
         public Village Target => target;
+
+        private RaidContext Context => new RaidContext(dispatcher, village, target);
 
         private void Awake()
         {
             village = GetComponent<Village>();
-            nextCheck = new float[plans.Length];
-            armed = new bool[plans.Length];
-            forced = new bool[plans.Length];
-            for (int i = 0; i < plans.Length; i++) nextCheck[i] = float.MaxValue;
+            foreach (RaidDefinition plan in plans) schedules.Add(new RaidPlanSchedule(plan));
         }
 
-        private void Update()
+        private void OnEnable()
         {
-            if (Keyboard.current == null) return;
-            if (Keyboard.current[raidNowKey].wasPressedThisFrame) Force(RaidDefinition.Objective.Raid, 0f);
-            if (Keyboard.current[stealNowKey].wasPressedThisFrame) Force(RaidDefinition.Objective.StealFood, 0f);
+            GameInput.Controls.DevTools.RaidNow.performed += OnRaidNow;
+            GameInput.Controls.DevTools.StealNow.performed += OnStealNow;
         }
+
+        private void OnDisable()
+        {
+            GameInput.Controls.DevTools.RaidNow.performed -= OnRaidNow;
+            GameInput.Controls.DevTools.StealNow.performed -= OnStealNow;
+        }
+
+        private void OnRaidNow(InputAction.CallbackContext _) => Force(RaidDefinition.Objective.Raid, 0f);
+        private void OnStealNow(InputAction.CallbackContext _) => Force(RaidDefinition.Objective.StealFood, 0f);
 
         public bool Owns(VillagerUnit unit)
         {
@@ -79,6 +72,12 @@ namespace SporeTribal.AI
 
         public void Tick(List<VillagerUnit> members)
         {
+            TickRunning();
+            SchedulePlans(members);
+        }
+
+        private void TickRunning()
+        {
             finished.Clear();
             foreach (KeyValuePair<RaidDefinition, IRaidRun> pair in running)
             {
@@ -90,87 +89,98 @@ namespace SporeTribal.AI
                 running[plan].End();
                 running.Remove(plan);
             }
+        }
 
-            for (int i = 0; i < plans.Length; i++)
+        private void SchedulePlans(List<VillagerUnit> members)
+        {
+            foreach (RaidPlanSchedule schedule in schedules)
             {
-                if (!forced[i] && !Arm(i)) continue;
-                if (Time.time < nextCheck[i] || running.ContainsKey(plans[i])) continue;
-                bool wasForced = forced[i];
-                bool launched = TryLaunch(plans[i], members, wasForced);
-                nextCheck[i] = Time.time + (launched ? plans[i].TimeBetweenExecution : wasForced ? ForcedRetrySeconds : plans[i].CheckTime);
-                if (launched) forced[i] = false;
+                if (!schedule.IsForced && !TryArm(schedule)) continue;
+                if (!schedule.IsDue || running.ContainsKey(schedule.Plan)) continue;
+                if (TryLaunch(schedule.Plan, members, schedule.IsForced)) schedule.MarkLaunched();
+                else schedule.MarkRefused();
             }
         }
 
-        private bool Arm(int i)
+        private bool TryArm(RaidPlanSchedule schedule)
         {
-            bool eligible = target != null && village.IsHostileTo(target)
-                && plans[i].RelationshipAllows(village.RelationshipTo(target))
-                && plans[i].PopulationAllows(Population(target));
-            if (!eligible) { armed[i] = false; nextCheck[i] = float.MaxValue; return false; }
-            if (!armed[i])
+            if (!IsEligible(schedule.Plan))
             {
-                armed[i] = true;
-                nextCheck[i] = Mathf.Min(nextCheck[i], Time.time + plans[i].InitialDelay);
+                schedule.Disarm();
+                return false;
             }
+            schedule.Arm();
             return true;
         }
 
-        private static int Population(Village of)
-        {
-            int count = 0;
-            foreach (VillagerUnit unit in VillagerUnit.All) if (unit.Home == of) count++;
-            return count;
-        }
+        private bool IsEligible(RaidDefinition plan) =>
+            HasHostileTarget
+            && plan.RelationshipAllows(village.RelationshipTo(target))
+            && plan.PopulationAllows(target.Population());
+
+        private bool HasHostileTarget => target != null && village.IsHostileTo(target);
 
         private void Force(RaidDefinition.Objective objective, float delay)
         {
-            for (int i = 0; i < plans.Length; i++)
+            foreach (RaidPlanSchedule schedule in schedules)
             {
-                if (plans[i].Goal != objective) continue;
-                nextCheck[i] = Mathf.Min(nextCheck[i], Time.time + delay);
-                forced[i] = true;
+                if (schedule.Plan.Goal != objective) continue;
+                schedule.Force(delay);
                 return;
             }
         }
 
-        private bool TryLaunch(RaidDefinition plan, List<VillagerUnit> members, bool force)
+        private bool TryLaunch(RaidDefinition plan, List<VillagerUnit> members, bool forced)
         {
-            if (target == null || !village.IsHostileTo(target))
+            if (!HasHostileTarget)
             {
-                if (force) Debug.LogWarning($"{name}: forced {plan.DisplayName} refused, no hostile target (target={(target != null ? target.name : "none")}).", this);
+                if (forced) Debug.LogWarning($"{name}: forced {plan.DisplayName} refused, no hostile target (target={(target != null ? target.name : "none")}).", this);
                 return false;
             }
-            if (!force && (!plan.FoodAllows(village.Food) || Random.Range(0f, 100f) >= plan.Frequency)) return false;
+            if (!forced && !RollsToLaunch(plan)) return false;
 
-            var squad = new List<VillagerUnit>();
-            int spare = members.Count - minHomeGuard;
-            foreach (VillagerUnit unit in members)
+            PickCandidates(plan, members);
+            if (candidates.Count < plan.RequiredMembers)
             {
-                if (squad.Count >= Mathf.Min(plan.DesiredMembers, spare)) break;
-                if (!unit.IsAttacking && !unit.IsAttending && !Owns(unit)) squad.Add(unit);
-            }
-            if (squad.Count < plan.RequiredMembers)
-            {
-                if (force) Debug.LogWarning($"{name}: forced {plan.DisplayName} waiting, {squad.Count} free of {plan.RequiredMembers} needed ({members.Count} fit members, {minHomeGuard} kept home).", this);
+                if (forced) Debug.LogWarning($"{name}: forced {plan.DisplayName} waiting, {candidates.Count} free of {plan.RequiredMembers} needed ({members.Count} fit members, {minHomeGuard} kept home).", this);
                 return false;
             }
 
-            Vector3 rally = rallyPoint != null ? rallyPoint.position : village.DropOffCentre;
-            switch (plan.Goal)
-            {
-                case RaidDefinition.Objective.StealFood:
-                    VillagerUnit thief = squad[0];
-                    running[plan] = new FoodThiefController(thief, dispatcher, village, target, plan.StealAmount,
-                        where => Alerted?.Invoke(target, Alert.ThiefIntercepted, where));
-                    Alerted?.Invoke(target, Alert.FoodRaidersComing, thief.transform.position);
-                    break;
-                default:
-                    running[plan] = new RaidSquad(plan, squad, dispatcher, village, target, rally, rallyRadius, musterTimeout,
-                        from => Alerted?.Invoke(target, Alert.RaidersComing, from));
-                    break;
-            }
+            IRaidRun run = plan.Goal == RaidDefinition.Objective.StealFood ? StartTheft(plan) : StartRaid(plan);
+            running[plan] = run;
+            run.Begin();
             return true;
         }
+
+        private bool RollsToLaunch(RaidDefinition plan) => plan.FoodAllows(village.Food) && Random.Range(0f, 100f) < plan.Frequency;
+
+        private void PickCandidates(RaidDefinition plan, List<VillagerUnit> members)
+        {
+            candidates.Clear();
+            int size = Mathf.Min(plan.DesiredMembers, members.Count - minHomeGuard);
+            foreach (VillagerUnit unit in members)
+            {
+                if (candidates.Count >= size) break;
+                if (IsFree(unit)) candidates.Add(unit);
+            }
+        }
+
+        private bool IsFree(VillagerUnit unit) => !unit.IsAttacking && !unit.IsAttending && !Owns(unit);
+
+        private IRaidRun StartTheft(RaidDefinition plan)
+        {
+            VillagerUnit thief = candidates[0];
+            Alerted?.Invoke(target, RaidAlert.FoodRaidersComing, thief.transform.position);
+            return new FoodThiefController(Context, thief, plan.StealAmount, OnThiefIntercepted);
+        }
+
+        private IRaidRun StartRaid(RaidDefinition plan)
+        {
+            var squad = new List<VillagerUnit>(candidates);
+            return new RaidSquad(Context, plan, squad, muster, OnRaidSetOff);
+        }
+
+        private void OnThiefIntercepted(Vector3 where) => Alerted?.Invoke(target, RaidAlert.ThiefIntercepted, where);
+        private void OnRaidSetOff(Vector3 from) => Alerted?.Invoke(target, RaidAlert.RaidersComing, from);
     }
 }

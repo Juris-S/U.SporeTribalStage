@@ -1,7 +1,4 @@
 using PrimeTween;
-using SporeTribal.Buildings;
-using SporeTribal.CameraControl;
-using SporeTribal.Commands;
 using SporeTribal.Inputs;
 using UnityEngine;
 using UnityEngine.Audio;
@@ -11,6 +8,7 @@ namespace SporeTribal.Economy
 {
     public enum MatchOutcome { Conquest, Alliance, Defeat }
 
+    [RequireComponent(typeof(AudioSource))]
     public class MatchDirector : MonoBehaviour
     {
         [Tooltip("The player's tribe.")]
@@ -37,12 +35,23 @@ namespace SporeTribal.Economy
         public event System.Action<MatchOutcome> Ended;
 
         private Village[] villages;
+        private AudioSource sting;
         private GUIStyle titleStyle;
         private GUIStyle buttonStyle;
+
+        private void Awake()
+        {
+            sting = GetComponent<AudioSource>();
+            sting.playOnAwake = false;
+            sting.loop = false;
+            sting.spatialBlend = 0f;
+            sting.outputAudioMixerGroup = stingerOutput;
+        }
 
         private void OnEnable()
         {
             Time.timeScale = 1f;
+            GameInput.Unlock();
             villages = FindObjectsByType<Village>();
             foreach (Village v in villages)
             {
@@ -78,33 +87,35 @@ namespace SporeTribal.Economy
                 if (!player.IsAlliedWith(v)) return;
                 anyAlly = true;
             }
-            if (anyRival) End(anyAlly ? MatchOutcome.Alliance : MatchOutcome.Conquest);
+            if (!anyRival) return;
+            MatchOutcome outcome = anyAlly ? MatchOutcome.Alliance : MatchOutcome.Conquest;
+            End(outcome);
         }
 
         private void End(MatchOutcome outcome)
         {
             IsOver = true;
             Outcome = outcome;
-            LockInput();
+            GameInput.Lock();
             Ended?.Invoke(outcome);
             PlaySting(outcome == MatchOutcome.Defeat ? defeatClips : victoryClips);
-            Tween.Custom(this, 1f, 0f, slowDownSeconds, static (g, v) => Time.timeScale = v, Ease.OutQuad, useUnscaledTime: true)
-                .OnComplete(this, static g => g.Halted = true);
+            SlowToHalt();
         }
 
-        private AudioSource sting;
+        private void SlowToHalt()
+        {
+            Tween.Custom(this, 1f, 0f, slowDownSeconds, static (_, scale) => Time.timeScale = scale, Ease.OutQuad, useUnscaledTime: true)
+                .OnComplete(this, static director => director.Halted = true);
+        }
 
         private void PlaySting(AudioClip[] clips)
         {
             if (clips.Length == 0) return;
             AudioClip clip = clips[Random.Range(0, clips.Length)];
-            if (sting == null) sting = gameObject.AddComponent<AudioSource>();
             sting.clip = clip;
             sting.volume = 0f;
-            sting.spatialBlend = 0f;
-            sting.outputAudioMixerGroup = stingerOutput;
             sting.Play();
-            Tween.Custom(this, 0f, clip.length, clip.length, static (m, t) => m.sting.volume = m.StingerGain(t), Ease.Linear, useUnscaledTime: true);
+            Tween.Custom(this, 0f, clip.length, clip.length, static (director, t) => director.sting.volume = director.StingerGain(t), Ease.Linear, useUnscaledTime: true);
         }
 
         private float StingerGain(float t)
@@ -113,15 +124,6 @@ namespace SporeTribal.Economy
             float fadeIn = stingerFadeIn > 0f ? t / stingerFadeIn : 1f;
             float fadeOut = stingerFadeOut > 0f ? (length - t) / stingerFadeOut : 1f;
             return Mathf.Clamp01(Mathf.Min(fadeIn, fadeOut));
-        }
-
-        private static void LockInput()
-        {
-            foreach (var c in FindObjectsByType<RTSInputController>()) c.enabled = false;
-            foreach (var c in FindObjectsByType<RTSCameraController>()) c.enabled = false;
-            foreach (var c in FindObjectsByType<CameraAutoOrbit>()) c.enabled = false;
-            foreach (var c in FindObjectsByType<BuildingHoverPulse>()) c.enabled = false;
-            foreach (var c in FindObjectsByType<PerformanceInput>()) c.enabled = false;
         }
 
         private void OnGUI()

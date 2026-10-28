@@ -6,6 +6,7 @@ namespace SporeTribal.AI
     {
         bool IsOver { get; }
         bool Owns(VillagerUnit unit);
+        void Begin();
         void Tick();
         void End();
     }

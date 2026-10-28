@@ -1,6 +1,6 @@
 namespace SporeTribal.Feedback
 {
-    public enum VfxKey
+    public enum VfxId
     {
         None,
         Hit,

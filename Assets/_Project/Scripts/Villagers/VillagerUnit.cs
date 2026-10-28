@@ -759,20 +759,21 @@ namespace SporeTribal.Villagers
         {
             Flash();
             if (IsAlive && !swingTween.isAlive) model.Play(VillagerModel.Clip.Hit);
-            if (Home != null) Home.ReportAttack(transform.position, source != null && source.GetComponent<VillagerUnit>() is VillagerUnit hitBy ? hitBy.Home : null);
-            if (!IsAlive || mourning || source == null) return;
-            if (!(source.GetComponent<VillagerUnit>() is VillagerUnit attacker) || !attacker.IsAlive || Home == null || !Home.IsHostileTo(attacker.Home)) return;
-
-            if (!IsFighting) Defend(attacker);
-            CallForHelp(Home, transform.position, attacker, this);
+            if (Home == null) return;
+            VillagerUnit attacker = source != null && source.TryGetComponent(out VillagerUnit hitBy) ? hitBy : null;
+            if (ShouldFightBack(attacker)) Defend(attacker);
+            Home.ReportAttack(transform.position, attacker);
         }
 
-        public static void CallForHelp(Village tribe, Vector3 where, VillagerUnit attacker, VillagerUnit except = null)
+        private bool ShouldFightBack(VillagerUnit attacker) =>
+            IsAlive && !mourning && !IsFighting && attacker != null && attacker.IsAlive && Home.IsHostileTo(attacker.Home);
+
+        public static void CallForHelp(Village tribe, Vector3 where, VillagerUnit attacker)
         {
             if (tribe == null || attacker == null || !attacker.IsAlive) return;
             foreach (VillagerUnit ally in all)
             {
-                if (ally == except || ally.Home != tribe || !ally.IsAlive || ally.IsFighting || !ally.CanAutoDefend) continue;
+                if (ally.Home != tribe || !ally.IsAlive || ally.IsFighting || !ally.CanAutoDefend) continue;
                 float range = ally.helpRadius;
                 if ((ally.transform.position - where).sqrMagnitude > range * range) continue;
                 ally.Defend(attacker);
@@ -877,10 +878,12 @@ namespace SporeTribal.Villagers
             swingStruck = true;
             if (swingVictim != null)
             {
-                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + 0.5f)) swingVictim.Health.Damage(Damage, gameObject);
+                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + 0.5f)) Hit(swingVictim.Health, Damage);
             }
-            else if (swingStructure != null && swingStructure.IsStanding) swingStructure.Health.Damage(RazeDamage, gameObject);
+            else if (swingStructure != null && swingStructure.IsStanding) Hit(swingStructure.Health, RazeDamage);
         }
+
+        private void Hit(IDamageable target, int amount) => target.Damage(amount, gameObject);
 
         private void PoseTool(float pitch)
         {

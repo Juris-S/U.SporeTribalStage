@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using SporeTribal.Commands;
+using SporeTribal.Inputs;
 using SporeTribal.Selection;
 using SporeTribal.Utilities;
 using SporeTribal.Villagers;
@@ -13,8 +14,6 @@ namespace SporeTribal.Debugging
         [SerializeField] private SelectionController selection;
         [SerializeField] private OrderDispatcher dispatcher;
         [SerializeField] private Material lineMaterial;
-        [SerializeField] private Key toggleKey = Key.N;
-        [SerializeField] private Key allKey = Key.M;
         [SerializeField] private float lineWidth = 0.12f;
         [SerializeField] private float lift = 0.06f;
         [SerializeField] private float slotRadius = 0.4f;
@@ -48,8 +47,24 @@ namespace SporeTribal.Debugging
             root.gameObject.SetActive(false);
         }
 
-        private void OnEnable() => dispatcher.OrderIssued += HandleOrder;
-        private void OnDisable() => dispatcher.OrderIssued -= HandleOrder;
+        private static TribalControls.DevToolsActions Actions => GameInput.Controls.DevTools;
+
+        private void OnEnable()
+        {
+            dispatcher.OrderIssued += HandleOrder;
+            Actions.ToggleNavMeshView.performed += OnToggle;
+            Actions.ToggleNavMeshViewAll.performed += OnToggleAll;
+        }
+
+        private void OnDisable()
+        {
+            dispatcher.OrderIssued -= HandleOrder;
+            Actions.ToggleNavMeshView.performed -= OnToggle;
+            Actions.ToggleNavMeshViewAll.performed -= OnToggleAll;
+        }
+
+        private void OnToggle(InputAction.CallbackContext _) => Toggle(false);
+        private void OnToggleAll(InputAction.CallbackContext _) => Toggle(true);
 
         private void HandleOrder(IReadOnlyList<VillagerUnit> units, Vector3[] slots, int[] assignment)
         {
@@ -62,12 +77,6 @@ namespace SporeTribal.Debugging
 
         private void Update()
         {
-            if (Keyboard.current != null)
-            {
-                if (Keyboard.current[toggleKey].wasPressedThisFrame) Toggle(false);
-                if (Keyboard.current[allKey].wasPressedThisFrame) Toggle(true);
-            }
-
             if (!visible) return;
 
             labels.Clear();

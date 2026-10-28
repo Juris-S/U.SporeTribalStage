@@ -39,18 +39,18 @@ namespace SporeTribal.UI
             village.Attacked -= OnAttacked;
         }
 
-        private void OnRaidAlert(Village target, TribeRaidDirector.Alert alert, Vector3 from)
+        private void OnRaidAlert(Village target, RaidAlert alert, Vector3 from)
         {
             if (target != village) return;
             switch (alert)
             {
-                case TribeRaidDirector.Alert.FoodRaidersComing:
+                case RaidAlert.FoodRaidersComing:
                     Show($"Incoming food raider from the {Direction(from)}!");
                     break;
-                case TribeRaidDirector.Alert.RaidersComing:
+                case RaidAlert.RaidersComing:
                     Show($"Raiders are coming from the {Direction(from)}!");
                     break;
-                case TribeRaidDirector.Alert.ThiefIntercepted:
+                case RaidAlert.ThiefIntercepted:
                     Show("Food thief stopped, the food is back in store.");
                     break;
             }
