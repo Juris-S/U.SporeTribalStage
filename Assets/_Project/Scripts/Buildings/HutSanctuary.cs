@@ -20,6 +20,7 @@ namespace SporeTribal.Buildings
         private readonly List<VillagerUnit> inside = new List<VillagerUnit>();
 
         public bool IsSleeping => inside.Count > 0;
+        public MainHut Hut => hut;
         public Bounds Bounds => hut.Bounds;
         public Vector3 Door => hut.transform.position;
 

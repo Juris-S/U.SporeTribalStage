@@ -114,6 +114,8 @@ namespace SporeTribal.Villagers
         private const float StallGiveUpSeconds = 1.5f;
         private const float AlertScanSeconds = 0.5f;
         private const float RepathSeconds = 0.2f;
+        private const float ChargeStuckSeconds = 0.6f;
+        private const float ChargeDetourDegrees = 50f;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int RimColorId = Shader.PropertyToID("_RimColor");
         private static readonly int FillColorId = Shader.PropertyToID("_FillColor");
@@ -126,6 +128,8 @@ namespace SporeTribal.Villagers
         private bool returningFromFight;
         private bool returnStarted;
         private Vector3 chargeGoal;
+        private float chargeStuck;
+        private float chargeAngle;
         private Color skinTone;
         private float clipUntil;
         private static readonly Dictionary<Village, float> tribeTones = new Dictionary<Village, float>();
@@ -357,7 +361,7 @@ namespace SporeTribal.Villagers
         private bool Hurrying => charging || returningFromFight || IsFighting || IsRazing || (IsHurt && wanderCentre == null) || (wanderCentre == null && order is TribalOrder current && current.Kind != OrderKind.Watch && FarFromDestination);
 
         private bool FarFromDestination => (agent.destination - transform.position).sqrMagnitude > runMinDistance * runMinDistance;
-        private bool IsHurt => Health != null && Health.Fraction < hurtRunFraction;
+        public bool IsHurt => Health != null && Health.Fraction < hurtRunFraction;
 
         private float Pace => Hurrying ? baseSpeed * runSpeedMultiplier : baseSpeed;
 
@@ -585,6 +589,7 @@ namespace SporeTribal.Villagers
         public bool IsFighting => order is TribalOrder o && o.Kind == OrderKind.Attack;
         public bool IsRazing => order is TribalOrder o && o.Kind == OrderKind.Raze;
         public bool IsAttacking => IsFighting || IsRazing;
+        public VillagerUnit AttackVictim => IsFighting ? order.Value.Target : null;
         public Building RazeTarget => IsRazing ? order.Value.Structure : null;
         public bool HasOrder => order is TribalOrder o && (o.Kind != OrderKind.Move || IsMoving);
         public float SearchRadius => searchRadius;
@@ -928,8 +933,17 @@ namespace SporeTribal.Villagers
                     model.Play(VillagerModel.Clip.Locomotion);
                     Vector3 away = transform.position - target.transform.position;
                     away.y = 0f;
-                    Vector3 goal = target.transform.position + away.normalized * (attackRange * RetreatRangeFraction);
-                    if (!agent.hasPath || (goal - chargeGoal).sqrMagnitude > ChargeRepathDistance * ChargeRepathDistance)
+                    bool stuck = false;
+                    if (!agent.pathPending && agent.velocity.sqrMagnitude < StillSqrSpeed) chargeStuck += RepathSeconds;
+                    else chargeStuck = 0f;
+                    if (chargeStuck > ChargeStuckSeconds)
+                    {
+                        chargeStuck = 0f;
+                        chargeAngle += ChargeDetourDegrees;
+                        stuck = true;
+                    }
+                    Vector3 goal = target.transform.position + Quaternion.AngleAxis(chargeAngle, Vector3.up) * away.normalized * (attackRange * RetreatRangeFraction);
+                    if (stuck || !agent.hasPath || (goal - chargeGoal).sqrMagnitude > ChargeRepathDistance * ChargeRepathDistance)
                     {
                         SteerTo(goal);
                         chargeGoal = goal;
@@ -939,6 +953,7 @@ namespace SporeTribal.Villagers
                 }
 
                 charging = false;
+                chargeStuck = chargeAngle = 0f;
                 agent.ResetPath();
                 Face(target.transform.position);
                 if (Time.time < nextSwingTime)
