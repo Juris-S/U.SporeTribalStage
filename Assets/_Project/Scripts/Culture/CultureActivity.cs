@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using PrimeTween;
+using SporeTribal.Audio;
 using SporeTribal.Villagers;
 using UnityEngine;
 
@@ -8,6 +9,8 @@ namespace SporeTribal.Culture
     public abstract class CultureActivity : ScriptableObject
     {
         [SerializeField] private string label;
+        [Tooltip("Sound held at the activity's centre while it performs. None for silence.")]
+        [SerializeField] private SfxId sound;
         [Tooltip("How much the tribe wants this, by alignment: -1 (aggressive) on the left, +1 (friendly) on the right. 0 never happens, 1 is the most frequent.")]
         [SerializeField] private AnimationCurve appeal = AnimationCurve.Linear(-1f, 0f, 1f, 1f);
         [Tooltip("Fewest and most villagers taking part (min, max).")]
@@ -19,6 +22,7 @@ namespace SporeTribal.Culture
         [SerializeField] private bool includeChieftain;
 
         public bool IncludeChieftain => includeChieftain;
+        public SfxId Sound => sound;
         public string Label => string.IsNullOrEmpty(label) ? name : label;
         public Vector2 Duration => duration;
 

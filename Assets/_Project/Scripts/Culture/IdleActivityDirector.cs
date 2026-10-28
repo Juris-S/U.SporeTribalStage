@@ -43,7 +43,10 @@ namespace SporeTribal.Culture
         public TribeCulture Culture => culture;
         public string LastRefusal { get; private set; }
 
+        public Vector3 Centre => centre;
+
         public event System.Action<CultureActivity> Started;
+        public event System.Action<CultureActivity> Performing;
         public event System.Action<CultureActivity> Ended;
 
         private void Awake()
@@ -173,6 +176,7 @@ namespace SporeTribal.Culture
             running = Current.Perform(group, centre, seconds);
             CurrentPhase = Phase.Performing;
             phaseEnd = Time.time + seconds;
+            Performing?.Invoke(Current);
         }
 
         private bool AllInPlace()

@@ -11,6 +11,7 @@ namespace SporeTribal.CameraControl
         [SerializeField] private CameraProfile profile;
 
         public Vector3 Focus => focus;
+        public float Zoom01 => Mathf.InverseLerp(profile.MinDistance, profile.MaxDistance, distance);
 
         private Camera cam;
 

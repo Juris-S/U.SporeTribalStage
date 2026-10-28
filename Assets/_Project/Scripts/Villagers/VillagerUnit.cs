@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using PrimeTween;
+using SporeTribal.Audio;
 using SporeTribal.Buildings;
 using SporeTribal.Combat;
 using SporeTribal.Definitions;
@@ -16,6 +17,7 @@ namespace SporeTribal.Villagers
     {
         private static readonly List<VillagerUnit> all = new List<VillagerUnit>();
         public static IReadOnlyList<VillagerUnit> All => all;
+        public static event System.Action<VillagerUnit> Died;
 
         public static Material MarkerMaterial { get; private set; }
         public static Color AttackRimColour { get; private set; }
@@ -1016,6 +1018,7 @@ namespace SporeTribal.Villagers
         {
             if (swingTween.isAlive) swingTween.Complete();
             stage = "attacking";
+            if (victim != null) AudioManager.Play(SfxId.VillagerAttack, transform.position);
             model.Play(Tool != null && Tool.Style == AttackStyle.Slash ? VillagerModel.Clip.AttackSlash : VillagerModel.Clip.Attack, seconds: swingSeconds);
             swingVictim = victim;
             swingStructure = structure;
@@ -1032,7 +1035,11 @@ namespace SporeTribal.Villagers
             swingStruck = true;
             if (swingVictim != null)
             {
-                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + StrikeReachSlack)) Hit(swingVictim.Health, Damage);
+                if (CanStrike(swingVictim) && InReach(swingVictim, attackRange + StrikeReachSlack))
+                {
+                    Hit(swingVictim.Health, Damage);
+                    AudioManager.Play(SfxId.Punch, swingVictim.transform.position);
+                }
             }
             else if (swingStructure != null && swingStructure.IsStanding) Hit(swingStructure.Health, RazeDamage);
         }
@@ -1160,6 +1167,7 @@ namespace SporeTribal.Villagers
 
         private void Die()
         {
+            Died?.Invoke(this);
             Cancel();
             SetSelected(false);
             enabled = false;

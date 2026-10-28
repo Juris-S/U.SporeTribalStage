@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using PrimeTween;
+using SporeTribal.Audio;
 using SporeTribal.Combat;
 using SporeTribal.Economy;
 using SporeTribal.Feedback;
@@ -145,6 +146,7 @@ namespace SporeTribal.Buildings
                 point = mainCollider.ClosestPoint(from);
             }
             VfxPlayer.Play(impactEffect, point);
+            AudioManager.Play(SfxId.BuildingHit, point);
             hitTween = Tween.PunchScale(transform, hitPunch, hitPunchSeconds, frequency: 6f);
         }
 

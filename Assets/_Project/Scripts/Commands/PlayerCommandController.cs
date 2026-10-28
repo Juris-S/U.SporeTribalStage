@@ -1,3 +1,4 @@
+using SporeTribal.Audio;
 using SporeTribal.Buildings;
 using SporeTribal.Economy;
 using SporeTribal.Feedback;
@@ -67,6 +68,13 @@ namespace SporeTribal.Commands
             return false;
         }
 
+        private static VillagerUnit FirstHostileOrdered(OrderBatch batch)
+        {
+            foreach (OrderBatch.Entry entry in batch.Entries)
+                if (entry.Result.Order is TribalOrder order && (order.Kind == OrderKind.Attack || order.Kind == OrderKind.Raze)) return entry.Unit;
+            return null;
+        }
+
         private void Issue(ClickTarget target)
         {
             OrderBatch batch = dispatcher.Issue(selection.Selected, target);
@@ -75,6 +83,7 @@ namespace SporeTribal.Commands
                 Debug.Log($"[Order] All refused: {reason.Describe()}");
                 return;
             }
+            if (FirstHostileOrdered(batch) is VillagerUnit shouter) AudioManager.Play(SfxId.OrderGiven, shouter.transform.position);
             if (batch.GroupRefusal != RefusalReason.None)
                 Debug.Log($"[Order] Performance refused: {batch.GroupRefusal.Describe()}");
         }

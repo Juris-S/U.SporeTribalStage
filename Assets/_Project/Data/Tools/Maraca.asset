@@ -26,4 +26,4 @@ MonoBehaviour:
   icon: {fileID: 2800000, guid: 40cb1f65fed921e43a45a9fb259b02ae, type: 3}
   silhouetteIcon: {fileID: 2800000, guid: 6aa5253c81bd5f34f95664ca0bad7041, type: 3}
   callClip: {fileID: 0}
-  responseClip: {fileID: 0}
+  responseClip: {fileID: 8300000, guid: 0002be83aec043be9b4412e27e996296, type: 3}

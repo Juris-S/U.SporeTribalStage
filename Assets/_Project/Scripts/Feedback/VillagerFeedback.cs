@@ -1,4 +1,5 @@
 using PrimeTween;
+using SporeTribal.Audio;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -42,7 +43,11 @@ namespace SporeTribal.Feedback
             baseOffset = agent.baseOffset;
         }
 
-        public void Selected() => TweenFx.Selected(transform, restScale);
+        public void Selected()
+        {
+            AudioManager.Play(SfxId.Select, transform.position);
+            TweenFx.Selected(transform, restScale);
+        }
         public void Happy() => TweenFx.Happy(transform, restScale);
         public void Excited() => TweenFx.Excited(transform, restScale);
         public void Fighting() => TweenFx.Fighting(transform, restScale);
