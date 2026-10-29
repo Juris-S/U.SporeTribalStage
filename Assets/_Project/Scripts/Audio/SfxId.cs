@@ -24,6 +24,7 @@ namespace SporeTribal.Audio
         VillagerAttack,
         DanceCircle,
         PlayFight,
-        Punch
+        Punch,
+        TribeArrived
     }
 }

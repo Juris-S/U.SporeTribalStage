@@ -83,8 +83,10 @@ namespace SporeTribal.Buildings
                 tinted[i] = new TintedRenderer { Renderer = renderers[i], BaseColor = BaseColorOf(renderers[i]) };
         }
 
-        private static Color BaseColorOf(Renderer renderer)
+        private Color BaseColorOf(Renderer renderer)
         {
+            renderer.GetPropertyBlock(block);
+            if (block.HasColor(BaseColor)) return block.GetColor(BaseColor);
             Material material = renderer.sharedMaterial;
             return material.HasProperty(BaseColor) ? material.GetColor(BaseColor) : Color.white;
         }
@@ -95,8 +97,9 @@ namespace SporeTribal.Buildings
             {
                 if (entry.Renderer == null) continue;
                 Color c = entry.BaseColor;
+                entry.Renderer.GetPropertyBlock(block);
                 block.SetColor(BaseColor, new Color(c.r * (1f + boost), c.g * (1f + boost), c.b * (1f + boost), c.a));
-                entry.Renderer.SetPropertyBlock(boost > 0f ? block : null);
+                entry.Renderer.SetPropertyBlock(block);
             }
         }
     }

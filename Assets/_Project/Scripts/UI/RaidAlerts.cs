@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using SporeTribal.AI;
 using SporeTribal.Economy;
 using UnityEngine;
@@ -12,16 +11,12 @@ namespace SporeTribal.UI
         [SerializeField] private float showSeconds = 5f;
         [Tooltip("Minimum seconds between two 'under attack' banners, so a long fight doesn't spam them.")]
         [SerializeField] private float underAttackCooldown = 15f;
-        [SerializeField] private int fontSize = 20;
 
         private static readonly string[] Compass = { "east", "north-east", "north", "north-west", "west", "south-west", "south", "south-east" };
-        private static readonly Vector2 BannerSize = new Vector2(460f, 40f);
 
-        private readonly List<(string text, float until)> banners = new List<(string, float)>();
         private TribeRaidDirector[] directors;
         private Village[] villages;
         private float nextUnderAttack;
-        private GUIStyle style;
 
         private void OnEnable()
         {
@@ -63,9 +58,9 @@ namespace SporeTribal.UI
             Show("Your tribe is under attack!");
         }
 
-        private void OnSurrendered(Village who) => Show(who == village ? "Your main hut has fallen. Your tribe surrenders." : "The rival tribe has surrendered!");
+        private void OnSurrendered(Village who) => Show(who == village ? "Your main hut has fallen. Your tribe surrenders." : $"The {who.ColouredName} tribe has surrendered!");
 
-        private void Show(string text) => banners.Add((text, Time.time + showSeconds));
+        private void Show(string text) => Toasts.Show(text, showSeconds);
 
         private string Direction(Vector3 from)
         {
@@ -73,20 +68,6 @@ namespace SporeTribal.UI
             float angle = Mathf.Atan2(to.z, to.x) * Mathf.Rad2Deg;
             int index = Mathf.RoundToInt(Mathf.Repeat(angle, 360f) / 45f) % 8;
             return Compass[index];
-        }
-
-        private void OnGUI()
-        {
-            banners.RemoveAll(banner => Time.time > banner.until);
-            if (banners.Count == 0) return;
-            if (style == null) style = new GUIStyle(GUI.skin.box) { fontSize = fontSize, alignment = TextAnchor.MiddleCenter };
-
-            float y = 12f;
-            foreach ((string text, float _) in banners)
-            {
-                GUI.Box(new Rect((Screen.width - BannerSize.x) * 0.5f, y, BannerSize.x, BannerSize.y), text, style);
-                y += BannerSize.y + 6f;
-            }
         }
     }
 }

@@ -39,12 +39,10 @@ namespace SporeTribal.UI
         private VisualElement meterFill;
         private VisualElement balloon;
         private VisualElement balloonIcon;
-        private Label banner;
         private Label relationship;
         private Tween meterTween;
         private float shownProgress;
         private float meterTarget = -1f;
-        private float bannerUntil;
         private float flashUntil;
         private bool flashGood;
         private int shownRelationship = int.MinValue;
@@ -57,13 +55,12 @@ namespace SporeTribal.UI
             if (root == null) return;
             root.pickingMode = PickingMode.Ignore;
             root.Q("perf-root").pickingMode = PickingMode.Ignore;
-            banner = root.Q<Label>("perf-banner");
             relationship = root.Q<Label>("perf-relationship");
             tray = root.Q("perf-tray");
             meterFill = root.Q("perf-meter-fill");
             balloon = root.Q("perf-balloon");
             balloonIcon = root.Q("perf-balloon-icon");
-            banner.pickingMode = relationship.pickingMode = balloon.pickingMode = PickingMode.Ignore;
+            relationship.pickingMode = balloon.pickingMode = PickingMode.Ignore;
             relationship.style.display = hintsStartVisible ? DisplayStyle.Flex : DisplayStyle.None;
             BuildButtons(root.Q("perf-buttons"));
 
@@ -140,7 +137,7 @@ namespace SporeTribal.UI
             switch (outcome)
             {
                 case SocialPerformanceDirector.Outcome.Allied:
-                    Show("The rival tribe is now your ally!");
+                    Show($"The {target.ColouredName} tribe is now your ally!");
                     break;
                 case SocialPerformanceDirector.Outcome.Pleased:
                     Show("The crowd loved it. They like you more.");
@@ -156,20 +153,12 @@ namespace SporeTribal.UI
 
         private void Show(string text)
         {
-            if (banner == null) return;
-            banner.text = text;
-            bannerUntil = Time.time + bannerSeconds;
-            banner.EnableInClassList("perf__banner--visible", true);
+            Toasts.Show(text, bannerSeconds);
         }
 
         private void Update()
         {
             if (root == null) return;
-            if (bannerUntil > 0f && Time.time > bannerUntil)
-            {
-                bannerUntil = 0f;
-                banner.EnableInClassList("perf__banner--visible", false);
-            }
             UpdateRelationship();
 
             bool active = director.IsActive;

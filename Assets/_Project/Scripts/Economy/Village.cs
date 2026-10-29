@@ -39,6 +39,7 @@ namespace SporeTribal.Economy
         [Tooltip("Instruments this tribe asks for during a recital. The first tribe only knows the didgeridoo; later tribes add more. A recital never asks for an instrument the band does not hold.")]
         [SerializeField] private InstrumentKind[] calledInstruments = { InstrumentKind.Didgeridoo };
 
+        private string tribeName;
         private readonly HashSet<Village> allies = new HashSet<Village>();
         private readonly Dictionary<Village, int> opinions = new Dictionary<Village, int>();
         private float soothedUntil;
@@ -55,6 +56,14 @@ namespace SporeTribal.Economy
         public StandingSpots Spots { get; private set; }
         public int Food { get; private set; }
         public Color TribeColour => tribeColour;
+
+        public string ColouredName => string.IsNullOrEmpty(tribeName) ? "rival" : $"<color=#{ColorUtility.ToHtmlStringRGB(tribeColour)}>{tribeName}</color>";
+
+        public void SetTribeColour(string name, Color colour)
+        {
+            tribeName = name;
+            tribeColour = colour;
+        }
         public IReadOnlyList<InstrumentKind> CalledInstruments => calledInstruments;
         public bool HasSurrendered { get; private set; }
         public bool IsSoothed => Time.time < soothedUntil;
