@@ -27,10 +27,6 @@ namespace SporeTribal.Economy
         [Tooltip("Metres sunk into the ground per unit of prefab scale, so the bush base sits on the surface.")]
         [SerializeField] private float sink = 0.12f;
         [SerializeField, Min(1)] private int attemptsPerBush = 30;
-        [Header("Seed")]
-        [Tooltip("Off: a fresh seed every play and restart. On: the same layout every time.")]
-        [SerializeField] private bool useFixedSeed;
-        [SerializeField] private uint fixedSeed = 1;
 
         private const float RayHeight = 100f;
         private const float NavMeshSnap = 1.5f;
@@ -43,7 +39,6 @@ namespace SporeTribal.Economy
 
         private void Awake()
         {
-            if (useFixedSeed) GameSeed.Set(fixedSeed); else GameSeed.Roll();
             Mulberry32 rng = GameSeed.Stream("berry-bushes");
 
             List<Keepout> keepouts = CollectKeepouts();

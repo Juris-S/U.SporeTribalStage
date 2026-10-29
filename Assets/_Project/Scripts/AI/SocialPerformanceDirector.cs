@@ -51,6 +51,8 @@ namespace SporeTribal.AI
 
         public Village Village => village;
         public Village Rival => rival;
+
+        public void SetRival(Village value) => rival = value;
         public IReadOnlyList<ToolDefinition> Instruments => instruments;
         public State Current { get; private set; }
         public bool IsActive => Current != State.Idle;

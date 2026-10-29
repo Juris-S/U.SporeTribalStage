@@ -62,6 +62,10 @@ namespace SporeTribal.AI
                     if (candidate.Village == village) spawner = candidate;
         }
 
+        public void SetTemper(Temper value) => temper = value;
+
+        public void DelayRecruiting() => nextRecruit = Time.time + Random.Range(recruitSeconds.x, recruitSeconds.y);
+
         private void Update()
         {
             if (Time.time < nextThink) return;
