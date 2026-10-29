@@ -1,5 +1,6 @@
 using PrimeTween;
 using SporeTribal.Inputs;
+using SporeTribal.UI;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
@@ -15,7 +16,6 @@ namespace SporeTribal.Economy
         [SerializeField] private Village player;
         [Tooltip("Real seconds the world takes to ease from full speed to a stop.")]
         [SerializeField, Min(0.1f)] private float slowDownSeconds = 2.5f;
-        [SerializeField] private int fontSize = 28;
         [Tooltip("One is picked at random when the player wins (and from Defeat Clips when they lose).")]
         [SerializeField] private AudioClip[] victoryClips;
         [SerializeField] private AudioClip[] defeatClips;
@@ -36,8 +36,6 @@ namespace SporeTribal.Economy
 
         private Village[] villages;
         private AudioSource sting;
-        private GUIStyle titleStyle;
-        private GUIStyle buttonStyle;
 
         private void Awake()
         {
@@ -105,7 +103,7 @@ namespace SporeTribal.Economy
         private void SlowToHalt()
         {
             Tween.Custom(this, 1f, 0f, slowDownSeconds, static (_, scale) => Time.timeScale = scale, Ease.OutQuad, useUnscaledTime: true)
-                .OnComplete(this, static director => director.Halted = true);
+                .OnComplete(this, static director => director.Halt());
         }
 
         private void PlaySting(AudioClip[] clips)
@@ -126,18 +124,10 @@ namespace SporeTribal.Economy
             return Mathf.Clamp01(Mathf.Min(fadeIn, fadeOut));
         }
 
-        private void OnGUI()
+        private void Halt()
         {
-            if (!Halted) return;
-            titleStyle ??= new GUIStyle(GUI.skin.label) { fontSize = fontSize * 2, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-            buttonStyle ??= new GUIStyle(GUI.skin.button) { fontSize = fontSize };
-
-            GUI.Box(new Rect(0f, 0f, Screen.width, Screen.height), GUIContent.none);
-            float cx = Screen.width * 0.5f, cy = Screen.height * 0.5f;
-            GUI.Label(new Rect(cx - 400f, cy - 140f, 800f, 80f), Title(), titleStyle);
-            GUI.Label(new Rect(cx - 400f, cy - 60f, 800f, 50f), Subtitle(), new GUIStyle(titleStyle) { fontSize = fontSize, fontStyle = FontStyle.Normal });
-            if (GUI.Button(new Rect(cx - 120f, cy + 20f, 240f, 60f), "Play again", buttonStyle))
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            Halted = true;
+            MatchResultScreen.Show(Outcome != MatchOutcome.Defeat, Title(), Subtitle(), static () => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex));
         }
 
         private string Title() => Outcome == MatchOutcome.Defeat ? "Defeat" : "Victory";

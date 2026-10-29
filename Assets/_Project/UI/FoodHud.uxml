@@ -1,4 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="Hud.uss"/>
     <Style src="project://database/Assets/_Project/UI/FoodHud.uss?fileID=7433441132597879392&amp;guid=04749c9bccf991a4ab5bd41b6c267a01&amp;type=3#FoodHud"/>
     <ui:VisualElement name="food-hud" class="food">
         <ui:VisualElement name="food-bar" class="food__bar">

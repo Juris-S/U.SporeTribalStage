@@ -2,13 +2,13 @@
     position: absolute;
     left: 12px;
     top: 12px;
-    width: 150px;
+    width: 170px;
     height: 44px;
     flex-direction: row;
     align-items: center;
 }
 
-/* Gradient background (dark red fading out to the right) is assigned in FoodHud.cs: USS has no gradient syntax. */
+/* Soft dark backdrop (shared with the toasts) is assigned in FoodHud.cs. */
 .food__bar {
     position: absolute;
     left: 22px;
@@ -19,8 +19,6 @@
     align-items: flex-start;
     /* Icon covers the first 22px of the bar; start the number just past it. */
     padding-left: 30px;
-    border-top-right-radius: 14px;
-    border-bottom-right-radius: 14px;
 }
 
 .food__count {
@@ -30,9 +28,9 @@
     -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
     /* Fredoka's line metrics sit the digits low; nudge up to centre them in the bar. */
     translate: 0 -2px;
-    color: rgb(255, 85, 85);
-    -unity-text-outline-width: 3px;
-    -unity-text-outline-color: rgb(110, 10, 25);
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.55);
 }
 
 .food__icon {

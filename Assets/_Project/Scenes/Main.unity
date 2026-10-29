@@ -34730,8 +34730,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SporeTribal.Economy.FoodHud
   village: {fileID: 429429937}
   icon: {fileID: 2800000, guid: 1b20a595acf6026479b14488e2700a37, type: 3}
-  gradientStart: {r: 1, g: 0.35, b: 0.4, a: 0.75}
-  gradientEnd: {r: 1, g: 0.35, b: 0.4, a: 0}
+  hudStyle: {fileID: 7433441132597879392, guid: 3c47ff5e66ab712468a83d4e18089cb3, type: 3}
 --- !u!1001 &961046638
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -1,3 +1,4 @@
+using PrimeTween;
 using SporeTribal.Economy;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -7,13 +8,20 @@ namespace SporeTribal.UI
     [ExecuteAlways, RequireComponent(typeof(UIDocument))]
     public class FoodHud : MonoBehaviour
     {
+        private const float FlashSeconds = 0.45f;
+        private const float PunchScale = 0.35f;
+
         [SerializeField] private Village village;
         [SerializeField] private Texture2D icon;
-        [SerializeField] private Color gradientStart = new Color(1f, 0.35f, 0.4f, 0.75f);
-        [SerializeField] private Color gradientEnd = new Color(1f, 0.35f, 0.4f, 0f);
+        [Tooltip("Shared HUD stylesheet (Hud.uss), applied to everything HudLayer adds.")]
+        [SerializeField] private StyleSheet hudStyle;
+        [SerializeField] private Color gainColour = new Color(0.55f, 1f, 0.55f);
+        [SerializeField] private Color spendColour = new Color(1f, 0.45f, 0.45f);
 
         private Label count;
-        private Texture2D gradient;
+        private VisualElement iconElement;
+        private Tween flash;
+        private Color flashFrom;
         private int shown = -1;
 
         private void OnEnable()
@@ -21,34 +29,43 @@ namespace SporeTribal.UI
             VisualElement root = GetComponent<UIDocument>().rootVisualElement;
             if (root == null) return;
             count = root.Q<Label>("food-count");
-            root.Q("food-bar").style.backgroundImage = new StyleBackground(BuildGradient());
-            root.Q("food-icon").style.backgroundImage = new StyleBackground(icon);
+            iconElement = root.Q("food-icon");
+            HudLayer.ApplyBackdrop(root.Q("food-bar"));
+            iconElement.style.backgroundImage = new StyleBackground(icon);
             root.pickingMode = PickingMode.Ignore;
             shown = -1;
         }
 
-        private void OnDisable()
-        {
-            if (gradient != null) DestroyImmediate(gradient);
-        }
+        public StyleSheet HudStyle => hudStyle;
+
+        private void OnDisable() => flash.Stop();
 
         private void Update()
         {
             if (count == null) return;
             int food = village != null ? village.Food : 0;
             if (food == shown) return;
+            bool changed = shown >= 0 && Application.isPlaying;
+            bool gained = food > shown;
             shown = food;
             count.text = shown.ToString();
+            if (changed) Flash(gained);
         }
 
-        private Texture2D BuildGradient()
+        private void Flash(bool gained)
         {
-            const int width = 64;
-            if (gradient != null) DestroyImmediate(gradient);
-            gradient = new Texture2D(width, 1, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.HideAndDontSave };
-            for (int x = 0; x < width; x++) gradient.SetPixel(x, 0, Color.Lerp(gradientStart, gradientEnd, x / (width - 1f)));
-            gradient.Apply();
-            return gradient;
+            flash.Stop();
+            flashFrom = gained ? gainColour : spendColour;
+            flash = Tween.Custom(this, 0f, 1f, FlashSeconds, static (hud, t) => hud.ApplyFlash(t), Ease.OutQuad);
+        }
+
+        private void ApplyFlash(float t)
+        {
+            count.style.color = Color.Lerp(flashFrom, Color.white, t);
+            float s = 1f + PunchScale * (1f - t) * (1f - t);
+            count.style.scale = new Scale(new Vector2(s, s));
+            float iconScale = 1f + PunchScale * 0.5f * (1f - t) * (1f - t);
+            iconElement.style.scale = new Scale(new Vector2(iconScale, iconScale));
         }
     }
 }

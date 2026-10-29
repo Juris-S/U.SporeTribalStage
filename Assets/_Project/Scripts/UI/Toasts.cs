@@ -1,55 +1,47 @@
-using System.Collections.Generic;
+using PrimeTween;
 using SporeTribal.Audio;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace SporeTribal.UI
 {
-    public class Toasts : MonoBehaviour
+    public static class Toasts
     {
-        private const int FontSize = 22;
-        private const float TopFraction = 0.12f;
-        private const float Height = 50f;
-        private const float Gap = 6f;
-        private const float BackdropPadding = 200f;
-
-        private struct Toast
-        {
-            public string Text;
-            public float Start;
-            public float Until;
-        }
-
-        private static Toasts instance;
-
-        private readonly List<Toast> toasts = new List<Toast>();
-        private GUIStyle style;
+        private const float PopSeconds = 0.4f;
+        private const float FadeSeconds = 0.5f;
+        private const float DropPixels = 28f;
+        private const float StartScale = 0.85f;
 
         public static void Show(string text, float seconds = 5f, SfxId sound = SfxId.None)
         {
-            if (instance == null) instance = new GameObject("Toasts").AddComponent<Toasts>();
-            float now = Time.unscaledTime;
-            instance.toasts.Add(new Toast { Text = text, Start = now, Until = now + seconds });
+            VisualElement stack = HudLayer.ToastStack;
+            if (stack == null) return;
+
+            var toast = new VisualElement { pickingMode = PickingMode.Ignore };
+            toast.AddToClassList("toast");
+            HudLayer.ApplyBackdrop(toast);
+            Label label = HudLayer.MakeLabel(text, "toast__text");
+            label.enableRichText = true;
+            toast.Add(label);
+            toast.style.opacity = 0f;
+            stack.Add(toast);
+
+            float hold = Mathf.Max(0f, seconds - PopSeconds - FadeSeconds);
+            Sequence.Create(useUnscaledTime: true)
+                .Chain(Tween.Custom(toast, 0f, 1f, PopSeconds, static (el, pop) => Pop(el, pop), Ease.OutBack))
+                .Group(Tween.Custom(toast, 0f, 1f, PopSeconds / 3f, static (el, a) => el.style.opacity = a))
+                .ChainDelay(hold)
+                .Chain(Tween.Custom(toast, 1f, 0f, FadeSeconds, static (el, a) => el.style.opacity = a))
+                .OnComplete(toast, static el => el.RemoveFromHierarchy());
+
             if (sound != SfxId.None) AudioManager.PlayUi(sound);
         }
 
-        private void OnGUI()
+        private static void Pop(VisualElement toast, float pop)
         {
-            float now = Time.unscaledTime;
-            toasts.RemoveAll(toast => now >= toast.Until);
-            if (toasts.Count == 0) return;
-            style ??= new GUIStyle(GUI.skin.label) { richText = true, fontSize = FontSize, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-
-            float y = Screen.height * TopFraction;
-            foreach (Toast toast in toasts)
-            {
-                var rect = new Rect(0f, y, Screen.width, Height);
-                float spread = style.CalcSize(new GUIContent(toast.Text)).x * 0.5f + BackdropPadding;
-                ToastBackdrop.Begin(rect, now - toast.Start, toast.Until - now);
-                ToastBackdrop.Draw(new Rect(Screen.width * 0.5f - spread, y, spread * 2f, Height));
-                GUI.Label(rect, toast.Text, style);
-                ToastBackdrop.End();
-                y += Height + Gap;
-            }
+            toast.style.translate = new Translate(0f, -(1f - pop) * DropPixels);
+            float s = Mathf.LerpUnclamped(StartScale, 1f, pop);
+            toast.style.scale = new Scale(new Vector2(s, s));
         }
     }
 }

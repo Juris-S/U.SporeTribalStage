@@ -1,0 +1,185 @@
+/* Shared look for runtime HUD pieces built in code (toasts, tooltips, hut popup, results, bars). */
+
+.hud-layer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+/* Soft dark band with faded left/right edges; the texture is assigned in HudLayer.cs. */
+.hud-backdrop {
+    -unity-background-scale-mode: stretch-to-fill;
+    -unity-slice-left: 32;
+    -unity-slice-right: 32;
+}
+
+.hud-label {
+    margin: 0;
+    padding: 0 0 3px 0;
+    -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
+    -unity-text-align: middle-center;
+    color: rgb(255, 255, 255);
+    -unity-text-outline-width: 1.5px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.55);
+}
+
+.hud-button {
+    -unity-font-definition: url('Fonts/Fredoka-Bold.ttf');
+    -unity-text-outline-width: 1.5px;
+    -unity-text-outline-color: rgba(0, 0, 0, 0.55);
+    margin: 0;
+    padding: 0 18px 3px 18px;
+    height: 34px;
+    border-width: 0;
+    border-radius: 17px;
+    font-size: 17px;
+    color: rgb(255, 255, 255);
+    background-color: rgba(255, 255, 255, 0.18);
+    transition-property: scale, background-color;
+    transition-duration: 0.14s;
+    transition-timing-function: ease-out-back;
+}
+
+.hud-button:hover {
+    scale: 1.07 1.07;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.hud-button:active {
+    scale: 0.94 0.94;
+}
+
+.hud-button--off,
+.hud-button--off:hover,
+.hud-button--off:active {
+    scale: 1 1;
+    opacity: 0.5;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.toast-stack {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 12%;
+    align-items: center;
+}
+
+.toast {
+    min-height: 50px;
+    max-width: 90%;
+    margin-bottom: 6px;
+    padding: 0 48px;
+    justify-content: center;
+}
+
+.toast__text {
+    font-size: 22px;
+}
+
+.tooltip {
+    position: absolute;
+    display: none;
+    translate: -50% -100%;
+    margin-top: -8px;
+    padding: 6px 48px;
+    align-items: center;
+}
+
+.tooltip__name {
+    font-size: 18px;
+}
+
+.tooltip__cost {
+    font-size: 15px;
+    color: rgb(255, 214, 102);
+}
+
+.tooltip--short .tooltip__cost {
+    color: rgb(255, 110, 110);
+}
+
+.hut-popup {
+    position: absolute;
+    display: none;
+    translate: -50% -50%;
+    padding: 8px 52px 12px 52px;
+    align-items: center;
+}
+
+.hut-popup__title {
+    font-size: 20px;
+    margin-bottom: 6px;
+}
+
+.health-bar {
+    position: absolute;
+    display: none;
+    translate: -50% 0;
+    border-width: 1px;
+    border-color: rgba(0, 0, 0, 0.6);
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.health-bar__ghost,
+.health-bar__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 3px;
+}
+
+.health-bar__ghost {
+    background-color: rgba(255, 255, 255, 0.75);
+}
+
+.sleep-indicator {
+    position: absolute;
+    display: none;
+    translate: -50% -50%;
+    font-size: 22px;
+}
+
+.result {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+    opacity: 0;
+}
+
+.result__title {
+    font-size: 84px;
+    -unity-text-outline-width: 4px;
+    opacity: 0;
+}
+
+.result__title--win {
+    color: rgb(255, 214, 102);
+}
+
+.result__title--lose {
+    color: rgb(255, 110, 110);
+}
+
+.result__subtitle {
+    font-size: 28px;
+    margin-bottom: 28px;
+    opacity: 0;
+}
+
+.result__button {
+    height: 60px;
+    min-width: 240px;
+    border-radius: 30px;
+    font-size: 28px;
+    opacity: 0;
+}
