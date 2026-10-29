@@ -60,7 +60,9 @@ namespace SporeTribal.Economy
         [Header("Siting")]
         [Tooltip("Metres kept clear of the ground edge. Must stay well under half the ground width, or sites collapse to the centre.")]
         [SerializeField] private float edgeMargin = 24f;
-        [Tooltip("Metres between villages. Spore uses 100 to 150; the usable ground here is about 200 m square.")]
+        [Tooltip("Sites stay within this fraction of half the ground width from the origin, so a village never lands on the beach or in the sea. Its clear radius must still fit inside the sand line.")]
+        [SerializeField, Range(0.2f, 0.9f)] private float siteFraction = 0.58f;
+        [Tooltip("Metres between villages. Spore uses 100 to 150. Six sites must fit inside the island, so keep it well under its radius.")]
         [SerializeField] private float minSpacing = 85f;
         [Tooltip("The first rival settles within this distance of the player.")]
         [SerializeField] private float firstRivalRange = 110f;
@@ -345,6 +347,7 @@ namespace SporeTribal.Economy
         private bool TryPickSite(Mulberry32 rng, List<Vector3> sites, Bounds area, bool nearFirst, out Vector3 site)
         {
             site = default;
+            float siteRadius = area.extents.x * siteFraction;
             for (int relax = 0; relax < 4; relax++)
             {
                 float spacing = minSpacing * Mathf.Max(MinSpacingFloor, 1f - 0.1f * relax);
@@ -355,6 +358,7 @@ namespace SporeTribal.Economy
                 {
                     float x = rng.Range(area.min.x + edgeMargin, area.max.x - edgeMargin);
                     float z = rng.Range(area.min.z + edgeMargin, area.max.z - edgeMargin);
+                    if (x * x + z * z > siteRadius * siteRadius) continue;
                     if (!SpacedFrom(sites, x, z, spacing, nearFirst)) continue;
                     if (!IsSuitable(x, z, area.max.y, clear, tolerance, out Vector3 candidate)) continue;
                     float gap = NearestSite(sites, x, z);

@@ -45,6 +45,7 @@ namespace SporeTribal.Rendering
 
             Shader.SetGlobalFloat(WorldBend.AmountId, 0f);
             WorldBend.SetState(0f, Vector3.zero);
+            WorldBend.NotifyCamera(0f, Vector3.zero);
         }
 
         private void OnToggle(InputAction.CallbackContext _) => bendEnabled = !bendEnabled;
@@ -73,11 +74,14 @@ namespace SporeTribal.Rendering
             if (!ShouldBend(cam))
             {
                 Shader.SetGlobalFloat(WorldBend.AmountId, 0f);
+                WorldBend.NotifyCamera(0f, Vector3.zero);
                 return;
             }
 
+            Vector3 pivot = WorldBend.GroundPivot(cam, groundHeight);
             Shader.SetGlobalFloat(WorldBend.AmountId, Amount);
-            Shader.SetGlobalVector(WorldBend.PivotId, WorldBend.GroundPivot(cam, groundHeight));
+            Shader.SetGlobalVector(WorldBend.PivotId, pivot);
+            WorldBend.NotifyCamera(Amount, pivot);
             cam.cullingMatrix = Matrix4x4.Ortho(-cullingExtent, cullingExtent, -cullingExtent, cullingExtent,
                 cam.nearClipPlane, cam.farClipPlane) * cam.worldToCameraMatrix;
         }

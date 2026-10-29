@@ -55,6 +55,8 @@ namespace SporeTribal.EditorTools
             }
 
             active = settings;
+            float groundScale = settings.GroundSize / BaseGroundWidth;
+            painter.transform.localScale = new Vector3(groundScale, painter.transform.localScale.y, groundScale);
             activeZones = CollectFlatZones(settings);
             Mesh saved = Save(BuildGrid(painter.transform), HillsMeshPath);
 
@@ -65,6 +67,7 @@ namespace SporeTribal.EditorTools
             EditorUtility.SetDirty(filter);
             EditorUtility.SetDirty(collider);
             Physics.SyncTransforms();
+            ApplyIslandToMaterial(settings, painter.GetComponent<Renderer>());
             VerifyAgainstCollider(collider);
             return true;
         }
@@ -147,7 +150,23 @@ namespace SporeTribal.EditorTools
                 nearest = Mathf.Min(nearest, Vector2.Distance(new Vector2(x, z), zone.Center) - zone.Radius);
             float rise = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(nearest / settings.HillBlend));
 
-            return hill * rise * settings.HillHeight;
+            float land = hill * rise * settings.HillHeight;
+
+            float radius = Mathf.Sqrt(x * x + z * z);
+            float inland = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((radius - (settings.IslandRadius - settings.ShoreWidth)) / settings.ShoreWidth));
+            float shore = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((radius - settings.IslandRadius) / settings.ShoreWidth));
+            return land * (1f - inland) - settings.SeaDepth * shore;
+        }
+
+        private static void ApplyIslandToMaterial(EnvironmentBakeSettings settings, Renderer ground)
+        {
+            Material material = ground.sharedMaterial;
+            if (material == null) return;
+
+            material.SetFloat("_IslandRadius", settings.IslandRadius);
+            material.SetFloat("_SandWidth", settings.SandWidth);
+            material.SetFloat("_SeaLevel", settings.SeaLevel);
+            EditorUtility.SetDirty(material);
         }
 
         private static List<FlatZone> CollectFlatZones(EnvironmentBakeSettings settings)

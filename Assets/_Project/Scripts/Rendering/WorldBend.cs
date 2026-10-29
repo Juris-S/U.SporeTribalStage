@@ -11,11 +11,15 @@ namespace SporeTribal.Rendering
         public static Vector3 Pivot { get; private set; }
         public static bool IsActive => Amount > 0f;
 
+        public static event System.Action<float, Vector3> CameraBendSet;
+
         public static void SetState(float amount, Vector3 pivot)
         {
             Amount = amount;
             Pivot = pivot;
         }
+
+        public static void NotifyCamera(float amount, Vector3 pivot) => CameraBendSet?.Invoke(amount, pivot);
 
         public static Vector3 Apply(Vector3 flat)
         {

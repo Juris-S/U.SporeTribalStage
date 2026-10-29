@@ -25,6 +25,10 @@ namespace SporeTribal.CameraControl
         [SerializeField] private float dragPanSpeed = 0.0025f;
         [SerializeField] private float orbitSpeed = 0.25f;
 
+        [Header("Bounds")]
+        [Tooltip("The focus point cannot leave this circle around the world origin (metres). Keep it inside the island shore.")]
+        [SerializeField] private float maxFocusRadius = 140f;
+
         [Header("Edge scroll")]
         [SerializeField] private bool edgeScroll = true;
         [SerializeField] private float edgeMarginPixels = 16f;
@@ -56,6 +60,7 @@ namespace SporeTribal.CameraControl
         public float ReferenceDistance => referenceDistance;
         public float DragPanSpeed => dragPanSpeed;
         public float OrbitSpeed => orbitSpeed;
+        public float MaxFocusRadius => maxFocusRadius;
         public bool EdgeScroll => edgeScroll;
         public float EdgeMarginPixels => edgeMarginPixels;
         public float PanAccelTime => panAccelTime;

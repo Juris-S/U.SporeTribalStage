@@ -8,6 +8,11 @@ Shader "Project/Terrain"
         _UnderGrass ("Under Grass Clumps", Color) = (0.13, 0.36, 0.06, 1)
         _MeadowScale ("Meadow Gradient Scale", Range(0.005, 0.2)) = 0.035
 
+        [Header(Island Beach)]
+        _IslandRadius ("Island Radius (m)", Float) = 95
+        _SandWidth ("Beach Sand Width (m)", Float) = 9
+        _SeaLevel ("Sea Level (m)", Float) = -0.4
+
         [Header(Village Ground)]
         [NoScaleOffset] _MaskMap ("Baked Mask (G trail, A grass cover)", 2D) = "black" {}
         _MaskRect ("Mask Rect (origin x, origin z, size)", Vector) = (-75, -75, 150, 0)
@@ -65,6 +70,9 @@ Shader "Project/Terrain"
                 half4 _GrassDark;
                 half4 _UnderGrass;
                 float _MeadowScale;
+                float _IslandRadius;
+                float _SandWidth;
+                float _SeaLevel;
                 float4 _MaskRect;
                 half4 _SandColor;
                 half4 _DustColor;
@@ -266,6 +274,17 @@ Shader "Project/Terrain"
                     half3 ground = lerp(sand, stone, rock);
                     ground = lerp(ground, sand, over * rock);
                     col = lerp(col, ground, sandMask);
+                }
+
+                float shoreDistance = length(xz) + (warp.x + warp.y) * _EdgeWarp * 2.0;
+                float beach = smoothstep(_IslandRadius - _SandWidth, _IslandRadius - _SandWidth * 0.4, shoreDistance);
+                if (beach > 0)
+                {
+                    half3 beachSand = _SandColor.rgb * lerp(0.92, 1.06, Fbm(xz * 2.1))
+                                    * Detail(TEXTURE2D_ARGS(_DetailSand, sampler_DetailGrass), detailUV, _DetailStrength);
+                    float wet = 1 - smoothstep(0.0, 0.5, IN.flatWS.y - _SeaLevel);
+                    beachSand *= lerp(1.0, 0.72, wet);
+                    col = lerp(col, beachSand, beach);
                 }
 
                 InputData inputData = (InputData)0;

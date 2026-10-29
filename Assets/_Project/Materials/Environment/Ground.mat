@@ -49,6 +49,7 @@ Material:
     - _DetailStrength: 1.101
     - _DetailTile: 5
     - _EdgeWarp: 1.95
+    - _IslandRadius: 150
     - _MeadowScale: 0.2
     - _RockAmount: 0.584
     - _RockBreakup: 0.307
@@ -58,13 +59,15 @@ Material:
     - _SandOverAmount: 0.5
     - _SandOverScale: 0.45
     - _SandOverSoftness: 0.2
+    - _SandWidth: 14
+    - _SeaLevel: -0.4
     - _Smoothness: 0.05
     m_Colors:
     - _CrackColor: {r: 0.19999996, g: 0.16999996, b: 0.15999997, a: 1}
     - _DustColor: {r: 0.62, g: 0.62, b: 0.35999998, a: 1}
     - _GrassDark: {r: 0.21999997, g: 0.5, b: 0.089999996, a: 1}
     - _GrassLight: {r: 0.4699999, g: 0.74, b: 0.15999997, a: 1}
-    - _MaskRect: {r: -125, g: -125, b: 250, a: 0}
+    - _MaskRect: {r: -125, g: -125, b: 400, a: 0}
     - _RockColor: {r: 0.5471698, g: 0.5136169, b: 0.5136169, a: 1}
     - _RockRim: {r: 0.6, g: 0.56, b: 0.52, a: 1}
     - _SandColor: {r: 0.68235296, g: 0.6156863, b: 0.54901963, a: 1}

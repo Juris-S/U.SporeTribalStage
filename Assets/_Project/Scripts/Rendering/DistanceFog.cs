@@ -18,6 +18,8 @@ namespace SporeTribal.Rendering
         [Range(0f, 1f)]
         [SerializeField] private float maxOpacity = 0.9f;
         [SerializeField] private float groundHeight;
+        [Tooltip("Off keeps the Scene and Game views clear while editing; the fog only applies in play mode.")]
+        [SerializeField] private bool fogInEditMode;
 
         private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 
@@ -29,6 +31,12 @@ namespace SporeTribal.Rendering
 
         private void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
+            if (!Application.isPlaying && !fogInEditMode)
+            {
+                Shader.SetGlobalVector(ParamsId, Vector4.zero);
+                return;
+            }
+
             Shader.SetGlobalVector(CenterId, WorldBend.GroundPivot(cam, groundHeight));
             Shader.SetGlobalVector(ParamsId, new Vector4(clearRadius, Mathf.Max(fullRadius, clearRadius + 0.01f), maxOpacity, 0f));
             Shader.SetGlobalColor(ColorId, color);
