@@ -54,7 +54,7 @@ namespace SporeTribal.Audio
             }
             village.Attacked += OnAttacked;
             VillagerUnit.Died += OnVillagerDied;
-            cameraRig = FindFirstObjectByType<RTSCameraController>();
+            cameraRig = FindAnyObjectByType<RTSCameraController>();
             villages = FindObjectsByType<Village>();
             foreach (Village v in villages) v.Attacked += OnBattle;
         }

@@ -6,7 +6,7 @@ namespace SporeTribal.Inputs
 {
     public static class GameInput
     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR || DEBUG
         public static readonly bool DevToolsAvailable = true;
 #else
         public static readonly bool DevToolsAvailable = false;
