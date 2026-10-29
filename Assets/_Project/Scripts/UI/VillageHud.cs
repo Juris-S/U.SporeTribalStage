@@ -1,4 +1,5 @@
 using SporeTribal.AI;
+using SporeTribal.Audio;
 using SporeTribal.Buildings;
 using SporeTribal.Definitions;
 using SporeTribal.Economy;
@@ -9,6 +10,7 @@ using SporeTribal.Villagers;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 
 namespace SporeTribal.UI
 {
@@ -29,9 +31,7 @@ namespace SporeTribal.UI
         private const float Margin = 12f;
         private const float SpawnClearance = 1f;
         private const float Row = 30f;
-        private static readonly Vector2 FoodSize = new Vector2(150f, 44f);
-        private static readonly Vector2 TooltipSize = new Vector2(130f, 48f);
-        private static readonly Vector2 HutPopupSize = new Vector2(190f, 76f);
+        private static readonly Vector2 FoodSize = new Vector2(170f, 44f);
         private const float DebugWidth = 270f;
         private const float HutCloseDelay = 0.3f;
 
@@ -42,14 +42,21 @@ namespace SporeTribal.UI
         private bool hutOpen;
         private float hutCloseAt;
         private Rect foodChip;
-        private Rect hutPopup;
         private Rect debugPanel;
+        private VisualElement tooltip;
+        private Label tooltipName;
+        private Label tooltipCost;
+        private ToolBuilding tooltipBuilding;
+        private VisualElement popup;
+        private Button recruitButton;
+        private bool popupShown;
         private bool debugVisible;
 
         private static InputAction DebugToggle => GameInput.Controls.DevTools.ToggleVillageDebug;
 
         private void OnEnable()
         {
+            foodChip = new Rect(Margin, Margin, FoodSize.x, FoodSize.y);
             input.PointerBlocked = Blocked;
             DebugToggle.performed += OnDebugToggle;
         }
@@ -62,13 +69,19 @@ namespace SporeTribal.UI
 
         private void OnDebugToggle(InputAction.CallbackContext _) => debugVisible = !debugVisible;
 
-        private void Update() => UpdateHutHover();
+        private void Update()
+        {
+            UpdateHutHover();
+            if (!EnsureUi()) return;
+            UpdatePopup();
+            UpdateTooltip();
+        }
 
         private void UpdateHutHover()
         {
             if (Mouse.current == null) return;
             Vector2 mouse = Mouse.current.position.ReadValue();
-            bool overPopup = hutOpen && hutPopup.Contains(new Vector2(mouse.x, Screen.height - mouse.y));
+            bool overPopup = hutOpen && OverPopup(mouse);
             MainHut hovered = !Blocked(mouse) && ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit) ? hit.collider.GetComponentInParent<MainHut>() : null;
             bool overHut = hovered != null && hovered.Owner == village && hovered.IsStanding;
             if (overHut) hut = hovered;
@@ -79,52 +92,114 @@ namespace SporeTribal.UI
         private bool Blocked(Vector2 screen)
         {
             var p = new Vector2(screen.x, Screen.height - screen.y);
-            return foodChip.Contains(p) || (hutOpen && hutPopup.Contains(p)) || (debugVisible && debugPanel.Contains(p));
+            return foodChip.Contains(p) || (hutOpen && OverPopup(screen)) || (debugVisible && debugPanel.Contains(p));
+        }
+
+        private bool OverPopup(Vector2 screen)
+        {
+            if (popup == null || popup.panel == null) return false;
+            Vector2 point = RuntimePanelUtils.ScreenToPanel(popup.panel, new Vector2(screen.x, Screen.height - screen.y));
+            return popup.worldBound.Contains(point);
         }
 
         private void OnGUI()
         {
-            foodChip = new Rect(Margin, Margin, FoodSize.x, FoodSize.y);
-
-            DrawToolTooltip();
-            if (hutOpen) DrawHutPopup();
             if (debugVisible) DrawDebug();
         }
 
-        private static bool AboveBounds(Bounds b, Vector2 size, out Rect rect)
+        private bool EnsureUi()
         {
-            Vector3 screen = ScreenRaycast.WorldToScreen(new Vector3(b.center.x, b.max.y, b.center.z));
-            rect = new Rect(screen.x - size.x * 0.5f, Screen.height - screen.y - size.y - 8f, size.x, size.y);
-            return screen.z > 0f;
+            VisualElement layer = HudLayer.Root;
+            if (layer == null) return false;
+            if (popup != null && popup.panel != null) return true;
+
+            tooltip = new VisualElement { pickingMode = PickingMode.Ignore };
+            tooltip.AddToClassList("tooltip");
+            HudLayer.ApplyBackdrop(tooltip);
+            tooltipName = HudLayer.MakeLabel(null, "tooltip__name");
+            tooltipCost = HudLayer.MakeLabel(null, "tooltip__cost");
+            tooltip.Add(tooltipName);
+            tooltip.Add(tooltipCost);
+            layer.Add(tooltip);
+            tooltipBuilding = null;
+
+            popup = new VisualElement();
+            popup.AddToClassList("hut-popup");
+            HudLayer.ApplyBackdrop(popup);
+            popup.Add(HudLayer.MakeLabel("Main Hut", "hut-popup__title"));
+            recruitButton = new Button(OnRecruitClicked);
+            recruitButton.AddToClassList("hud-button");
+            popup.Add(recruitButton);
+            layer.Add(popup);
+            popupShown = false;
+            return true;
         }
 
-        private void DrawToolTooltip()
+        private void UpdatePopup()
         {
+            Vector2 anchor = default;
+            bool show = hutOpen && hut != null && HudLayer.TryWorldToPanel(hut.Bounds.center, popup, out anchor);
+            if (show)
+            {
+                popup.style.left = anchor.x;
+                popup.style.top = anchor.y;
+                bool roomToRecruit = VillagerUnit.CountIn(village) < maxVillagers;
+                string text = roomToRecruit ? $"Recruit villager ({recruitCost})" : "Tribe is full";
+                if (recruitButton.text != text) recruitButton.text = text;
+                recruitButton.EnableInClassList("hud-button--off", !CanRecruit());
+            }
+            if (show == popupShown) return;
+            popupShown = show;
+            if (show) HudLayer.PopIn(popup);
+            else HudLayer.FadeOut(popup);
+        }
+
+        private void UpdateTooltip()
+        {
+            ToolBuilding building = HoveredToolBuilding(out Bounds bounds);
+            Vector2 anchor = default;
+            if (building == null || !HudLayer.TryWorldToPanel(new Vector3(bounds.center.x, bounds.max.y, bounds.center.z), tooltip, out anchor))
+            {
+                if (tooltipBuilding != null) HudLayer.FadeOut(tooltip, 0.08f);
+                tooltipBuilding = null;
+                return;
+            }
+
+            tooltip.style.left = anchor.x;
+            tooltip.style.top = anchor.y;
+            tooltip.EnableInClassList("tooltip--short", village.Food < building.Tool.Cost);
+            if (building == tooltipBuilding) return;
+            tooltipBuilding = building;
+            tooltipName.text = building.Tool.DisplayName;
+            tooltipCost.text = $"{building.Tool.Cost} food";
+            HudLayer.PopIn(tooltip, 0.18f);
+        }
+
+        private ToolBuilding HoveredToolBuilding(out Bounds bounds)
+        {
+            bounds = default;
             if (selection == null) selection = FindAnyObjectByType<SelectionController>();
-            if (selection == null || selection.Selected.Count == 0 || Mouse.current == null) return;
+            if (selection == null || selection.Selected.Count == 0 || Mouse.current == null) return null;
 
             Vector2 mouse = Mouse.current.position.ReadValue();
-            if (Blocked(mouse)) return;
-            if (!ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit)) return;
+            if (Blocked(mouse) || !ScreenRaycast.TryRaycast(mouse, ~0, out RaycastHit hit)) return null;
             ToolBuilding building = hit.collider.GetComponentInParent<ToolBuilding>();
-            if (building == null || building.Tool == null || building.Owner != village || !building.IsStanding || !AboveBounds(hit.collider.bounds, TooltipSize, out Rect rect)) return;
-
-            Color previous = GUI.color;
-            GUI.color = village.Food >= building.Tool.Cost ? Color.white : new Color(1f, 0.5f, 0.5f);
-            GUI.Box(rect, $"{building.Tool.DisplayName}\n{building.Tool.Cost} food");
-            GUI.color = previous;
+            if (building == null || building.Tool == null || building.Owner != village || !building.IsStanding) return null;
+            bounds = hit.collider.bounds;
+            return building;
         }
 
-        private void DrawHutPopup()
-        {
-            if (hut == null || !AboveBounds(hut.Bounds, HutPopupSize, out hutPopup)) return;
+        private bool CanRecruit() => VillagerUnit.CountIn(village) < maxVillagers && village.Food >= recruitCost;
 
-            GUI.Box(hutPopup, "Main Hut");
-            bool roomToRecruit = VillagerUnit.CountIn(village) < maxVillagers;
-            GUI.enabled = roomToRecruit && village.Food >= recruitCost;
-            var button = new Rect(hutPopup.x + 8f, hutPopup.y + 30f, hutPopup.width - 16f, Row);
-            if (GUI.Button(button, roomToRecruit ? $"Recruit villager ({recruitCost})" : "Tribe is full")) Recruit();
-            GUI.enabled = true;
+        private void OnRecruitClicked()
+        {
+            if (!CanRecruit() || !Recruit())
+            {
+                HudLayer.Shake(recruitButton);
+                return;
+            }
+            HudLayer.Punch(popup);
+            AudioManager.PlayUi(SfxId.Select);
         }
 
         private void DrawDebug()
@@ -191,10 +266,11 @@ namespace SporeTribal.UI
             }
         }
 
-        private void Recruit()
+        private bool Recruit()
         {
-            if (!TryFindSpawnPoint(out Vector3 point)) return;
-            if (village.TrySpend(recruitCost)) spawner.SpawnAt(point);
+            if (!TryFindSpawnPoint(out Vector3 point) || !village.TrySpend(recruitCost)) return false;
+            spawner.SpawnAt(point);
+            return true;
         }
 
         private bool TryFindSpawnPoint(out Vector3 point)
