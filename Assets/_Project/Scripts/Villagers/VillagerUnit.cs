@@ -146,6 +146,7 @@ namespace SporeTribal.Villagers
         private float fidgetYaw;
         private const float RingLift = 0.03f;
         private const float RingGroundSearch = 3f;
+        private static int GroundMask => LayerMask.GetMask("Ground");
         private VillagerVisualRig rig;
         private float glanceYaw;
         private bool glancing;
@@ -430,10 +431,16 @@ namespace SporeTribal.Villagers
             if (!markerRing.activeSelf) return;
             Transform ring = markerRing.transform;
             Vector3 at = transform.position;
-            if (NavMesh.SamplePosition(at, out NavMeshHit ground, RingGroundSearch, NavMesh.AllAreas)) at.y = ground.position.y;
+            Quaternion tilt = Quaternion.identity;
+            if (Physics.Raycast(at + Vector3.up * RingGroundSearch, Vector3.down, out RaycastHit hit, RingGroundSearch * 2f, GroundMask))
+            {
+                at.y = hit.point.y;
+                tilt = Quaternion.FromToRotation(Vector3.up, hit.normal);
+            }
+            else if (NavMesh.SamplePosition(at, out NavMeshHit ground, RingGroundSearch, NavMesh.AllAreas)) at.y = ground.position.y;
             ring.SetPositionAndRotation(
                 new Vector3(at.x, at.y + RingLift, at.z),
-                Quaternion.Euler(0f, transform.eulerAngles.y, 0f) * Quaternion.Euler(90f, 0f, 0f));
+                tilt * Quaternion.Euler(0f, transform.eulerAngles.y, 0f) * Quaternion.Euler(90f, 0f, 0f));
         }
 
         private void ScheduleGlance() => nextGlanceTime = Time.time + Random.Range(idleGlanceInterval.x, idleGlanceInterval.y);
