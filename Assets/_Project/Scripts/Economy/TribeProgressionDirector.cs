@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using SporeTribal.AI;
+using SporeTribal.Audio;
 using SporeTribal.Buildings;
+using SporeTribal.UI;
 using SporeTribal.Utilities;
 using SporeTribal.Villagers;
 using Unity.AI.Navigation;
@@ -47,8 +49,10 @@ namespace SporeTribal.Economy
         [SerializeField] private Wave[] waves =
         {
             new Wave { tribes = 1, delaySeconds = 60f, villagers = new[] { 3 }, startingFood = 30, openings = new[] { 0 }, temper = TribeAI.Temper.Peaceful },
-            new Wave { tribes = 2, resolvedToTrigger = 1, foodFailsafe = true, villagers = new[] { 6 }, startingFood = 50, openings = new[] { -15, -40 } },
-            new Wave { tribes = 2, resolvedToTrigger = 3, villagers = new[] { 6, 9 }, startingFood = 80, openings = new[] { -40 } },
+            new Wave { tribes = 1, resolvedToTrigger = 1, foodFailsafe = true, villagers = new[] { 6 }, startingFood = 50, openings = new[] { -15 } },
+            new Wave { tribes = 1, resolvedToTrigger = 2, villagers = new[] { 6 }, startingFood = 50, openings = new[] { -40 } },
+            new Wave { tribes = 1, resolvedToTrigger = 3, villagers = new[] { 6 }, startingFood = 80, openings = new[] { -40 } },
+            new Wave { tribes = 1, resolvedToTrigger = 4, villagers = new[] { 9 }, startingFood = 80, openings = new[] { -40 } },
         };
         [Tooltip("Player food that brings the second wave early if the first tribe is ignored.")]
         [SerializeField, Min(0)] private int foodForNewTribes = 100;
@@ -68,15 +72,35 @@ namespace SporeTribal.Economy
         [SerializeField] private float flatTolerance = 1.2f;
         [SerializeField, Min(1)] private int attemptsPerSite = 250;
 
+        [Serializable]
+        public struct TribeColour
+        {
+            public string name;
+            public Color colour;
+        }
+
+        [Header("Tribe colours")]
+        [Tooltip("Each tribe takes one, so no two tribes share a colour. The player keeps the first; rivals draw from the rest in a seeded order. Tints villager shorts, headgear and building roofs.")]
+        [SerializeField] private TribeColour[] tribeColours =
+        {
+            new TribeColour { name = "Orange", colour = new Color(0.95f, 0.62f, 0.18f) },
+            new TribeColour { name = "Blue", colour = new Color(0.3f, 0.55f, 0.95f) },
+            new TribeColour { name = "Red", colour = new Color(0.88f, 0.2f, 0.22f) },
+            new TribeColour { name = "Purple", colour = new Color(0.6f, 0.32f, 0.82f) },
+            new TribeColour { name = "Pink", colour = new Color(0.93f, 0.4f, 0.7f) },
+            new TribeColour { name = "Teal", colour = new Color(0.15f, 0.78f, 0.8f) },
+        };
+
         [Header("Seed")]
         [Tooltip("Off: a fresh seed every play and restart. On: the same layout every time.")]
         [SerializeField] private bool useFixedSeed;
         [SerializeField] private uint fixedSeed = 1;
 
         [Header("Messages")]
-        [SerializeField] private int fontSize = 22;
         [SerializeField] private float messageSeconds = 6f;
 
+        private const string RoofAtlas = "hexagons_medieval";
+        private static readonly int RoofTintId = Shader.PropertyToID("_RoofTint");
         private const float RayHeight = 100f;
         private const float MinSpacingFloor = 0.85f;
         private static readonly string[] Compass = { "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west" };
@@ -88,6 +112,7 @@ namespace SporeTribal.Economy
             public int Wave;
             public int Opening;
             public bool Arrived;
+            public TribeColour Tribe;
         }
 
         private readonly List<Rival> rivals = new List<Rival>();
@@ -97,9 +122,6 @@ namespace SporeTribal.Economy
         private int groundMask;
         private int nextWave;
         private float startTime;
-        private string message;
-        private float messageUntil;
-        private GUIStyle style;
 
         public int Resolved
         {
@@ -133,6 +155,9 @@ namespace SporeTribal.Economy
 
             foreach (Vector3 site in sites) ClearScenery(site);
 
+            List<TribeColour> palette = ShuffledPalette(GameSeed.Stream("tribeColours"));
+            Colour(playerRoot, player, palette[0]);
+
             Vector3 shift = sites[0] - player.transform.position;
             Relocate(playerRoot, player.transform.position, sites[0]);
             playerRoot.gameObject.SetActive(true);
@@ -141,7 +166,7 @@ namespace SporeTribal.Economy
             int next = 1;
             for (int w = 0; w < waves.Length; w++)
                 for (int i = 0; i < waves[w].tribes && next < sites.Count; i++)
-                    rivals.Add(BuildRival(w, i, sites[next++]));
+                    rivals.Add(BuildRival(w, i, sites[next++], palette[Mathf.Min(rivals.Count + 1, palette.Count - 1)]));
 
             Debug.Log($"Villages: seed {GameSeed.Current}, player at {sites[0]}, {rivals.Count} rival sites");
         }
@@ -197,19 +222,46 @@ namespace SporeTribal.Economy
                 rival.Village.SetOpening(player, rival.Opening);
                 rival.Village.Deposit(wave.startingFood);
                 rival.Root.GetComponentInChildren<TribeAI>(true).DelayRecruiting();
-                Announce($"A new tribe has settled to the {Direction(rival.Village.transform.position)}.");
+                Announce($"The {rival.Village.ColouredName} tribe has settled to the {Direction(rival.Village.transform.position)}.");
+            }
+        }
+
+        private List<TribeColour> ShuffledPalette(Mulberry32 rng)
+        {
+            var palette = new List<TribeColour>(tribeColours);
+            if (palette.Count == 0) palette.Add(new TribeColour { name = "Player", colour = player.TribeColour });
+            for (int i = palette.Count - 1; i > 1; i--)
+            {
+                int j = rng.Range(1, i + 1);
+                (palette[i], palette[j]) = (palette[j], palette[i]);
+            }
+            return palette;
+        }
+
+        private static void Colour(Transform root, Village village, TribeColour tribe)
+        {
+            Color colour = tribe.colour;
+            village.SetTribeColour(tribe.name, colour);
+            var block = new MaterialPropertyBlock();
+            block.SetColor(RoofTintId, colour);
+            foreach (MeshRenderer renderer in root.GetComponentsInChildren<MeshRenderer>(true))
+            {
+                Material material = renderer.sharedMaterial;
+                if (material != null && material.mainTexture != null && material.mainTexture.name == RoofAtlas)
+                    renderer.SetPropertyBlock(block);
             }
         }
 
         private static int Pick(int[] values, int index, int fallback) =>
             values == null || values.Length == 0 ? fallback : values[Mathf.Min(index, values.Length - 1)];
 
-        private Rival BuildRival(int wave, int index, Vector3 site)
+        private Rival BuildRival(int wave, int index, Vector3 site, TribeColour tribe)
         {
             GameObject root = Instantiate(rivalTemplate.gameObject);
             root.name = $"Rival Tribe {rivals.Count + 1}";
             Village village = root.GetComponentInChildren<Village>(true);
             Relocate(root.transform, village.transform.position, site);
+            Colour(root.transform, village, tribe);
 
             Wave settings = waves[wave];
             root.GetComponentInChildren<VillagerSpawner>(true).SetRegulars(Mathf.Max(0, Pick(settings.villagers, index, 3) - 1));
@@ -217,7 +269,7 @@ namespace SporeTribal.Economy
 
             root.SetActive(true);
             int opening = Pick(settings.openings, index, 0);
-            return new Rival { Village = village, Root = root, Wave = wave, Opening = opening };
+            return new Rival { Village = village, Root = root, Wave = wave, Opening = opening, Tribe = tribe };
         }
 
         private void Relocate(Transform root, Vector3 from, Vector3 to)
@@ -363,17 +415,6 @@ namespace SporeTribal.Economy
             return Compass[Mathf.RoundToInt(Mathf.Repeat(bearing, 360f) / 45f) % Compass.Length];
         }
 
-        private void Announce(string text)
-        {
-            message = text;
-            messageUntil = Time.time + messageSeconds;
-        }
-
-        private void OnGUI()
-        {
-            style ??= new GUIStyle(GUI.skin.label) { fontSize = fontSize, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-            if (message == null || Time.time >= messageUntil) return;
-            GUI.Label(new Rect(0f, Screen.height * 0.12f, Screen.width, 50f), message, style);
-        }
+        private void Announce(string text) => Toasts.Show(text, messageSeconds, SfxId.TribeArrived);
     }
 }

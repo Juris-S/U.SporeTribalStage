@@ -8,6 +8,10 @@ Shader "Project/BentLit"
         _Metallic ("Metallic", Range(0, 1)) = 0
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 2
 
+        [Header(Roof Tint)]
+        _RoofTint ("Roof Tint (alpha 0 = off)", Color) = (0, 0, 0, 0)
+        _RoofRect ("Roof Atlas Cell (uv x, y, w, h)", Vector) = (0.375, 0, 0.125, 0.25)
+
         [Header(Wind)]
         [Toggle(_WIND)] _Wind ("Wind Sway", Float) = 0
         _WindFlex ("Flex (bend per m squared)", Range(0, 0.1)) = 0.012
@@ -26,6 +30,8 @@ Shader "Project/BentLit"
             half4 _BaseColor;
             half _Smoothness;
             half _Metallic;
+            half4 _RoofTint;
+            float4 _RoofRect;
             float _WindFlex;
             float _WindFlutter;
         CBUFFER_END
@@ -87,6 +93,8 @@ Shader "Project/BentLit"
             half4 frag(Varyings IN) : SV_Target
             {
                 half4 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;
+                float2 inRoof = step(_RoofRect.xy, IN.uv) * step(IN.uv, _RoofRect.xy + _RoofRect.zw);
+                albedo.rgb = lerp(albedo.rgb, _RoofTint.rgb * (Luminance(albedo.rgb) / 0.19), inRoof.x * inRoof.y * _RoofTint.a);
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = IN.positionWS;
