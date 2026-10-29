@@ -80,7 +80,7 @@ namespace SporeTribal.Economy
         }
 
         [Header("Tribe colours")]
-        [Tooltip("Each tribe takes one, so no two tribes share a colour. The player keeps the first; rivals draw from the rest in a seeded order. Tints villager shorts, headgear and building roofs.")]
+        [Tooltip("Each tribe takes one, so no two tribes share a colour. The palette is shuffled in a seeded order: the player takes the first colour, rivals the next ones. Tints villager shorts, headgear and building roofs.")]
         [SerializeField] private TribeColour[] tribeColours =
         {
             new TribeColour { name = "Orange", colour = new Color(0.95f, 0.62f, 0.18f) },
@@ -132,6 +132,28 @@ namespace SporeTribal.Economy
                     if (rival.Arrived && IsResolved(rival.Village)) count++;
                 return count;
             }
+        }
+
+        public readonly struct RivalStatus
+        {
+            public readonly Color Colour;
+            public readonly bool Arrived;
+            public readonly bool Resolved;
+
+            public RivalStatus(Color colour, bool arrived, bool resolved)
+            {
+                Colour = colour;
+                Arrived = arrived;
+                Resolved = resolved;
+            }
+        }
+
+        public int RivalCount => rivals.Count;
+
+        public RivalStatus StatusOf(int index)
+        {
+            Rival rival = rivals[index];
+            return new RivalStatus(rival.Tribe.colour, rival.Arrived, rival.Arrived && IsResolved(rival.Village));
         }
 
         private void Awake()
@@ -205,6 +227,26 @@ namespace SporeTribal.Economy
             if (HasPendingWave) Settle(nextWave++);
         }
 
+        public bool ResolveNext(bool conquer)
+        {
+            Rival next = NextUnresolved();
+            if (next == null && HasPendingWave)
+            {
+                SettleNext();
+                next = NextUnresolved();
+            }
+            if (next == null) return false;
+            if (conquer) next.Village.Surrender(); else next.Village.DeclareAlliance(player);
+            return true;
+        }
+
+        private Rival NextUnresolved()
+        {
+            foreach (Rival rival in rivals)
+                if (rival.Arrived && !IsResolved(rival.Village)) return rival;
+            return null;
+        }
+
         private bool ShouldSettle(Wave wave)
         {
             if (Time.time - startTime >= wave.delaySeconds && Resolved >= wave.resolvedToTrigger) return true;
@@ -230,9 +272,9 @@ namespace SporeTribal.Economy
         {
             var palette = new List<TribeColour>(tribeColours);
             if (palette.Count == 0) palette.Add(new TribeColour { name = "Player", colour = player.TribeColour });
-            for (int i = palette.Count - 1; i > 1; i--)
+            for (int i = palette.Count - 1; i > 0; i--)
             {
-                int j = rng.Range(1, i + 1);
+                int j = rng.Range(0, i + 1);
                 (palette[i], palette[j]) = (palette[j], palette[i]);
             }
             return palette;

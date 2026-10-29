@@ -50,6 +50,8 @@ namespace SporeTribal.Villagers
 
         public float ModelScale => modelScale;
         public Transform HeadAnchor { get; private set; }
+        public Vector3 FaceCentre => Vector3.Lerp(head.position, HeadAnchor.position, 0.5f);
+        public Vector3 FaceForward => transform.forward;
         public bool IsDead { get; private set; }
 
         public Transform ToolSocket { get; private set; }

@@ -197,3 +197,15 @@ MonoBehaviour:
     volume: 0.5
     pitchVariance: 0.03
     cooldown: 0.5
+  - key: 24
+    clips:
+    - {fileID: 8300000, guid: 97fe0a430ed24f0d86f9dc1b4cd99c86, type: 3}
+    volume: 0.6
+    pitchVariance: 0.04
+    cooldown: 0.05
+  - key: 25
+    clips:
+    - {fileID: 8300000, guid: 5c1e7a3b0d8f4a62b9e4f7d2a6c10b83, type: 3}
+    volume: 0.35
+    pitchVariance: 0.03
+    cooldown: 0.1

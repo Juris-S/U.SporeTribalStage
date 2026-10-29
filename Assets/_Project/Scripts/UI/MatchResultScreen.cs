@@ -16,9 +16,7 @@ namespace SporeTribal.UI
 
             Label titleLabel = HudLayer.MakeLabel(title, "result__title", won ? "result__title--win" : "result__title--lose");
             Label subtitleLabel = HudLayer.MakeLabel(subtitle, "result__subtitle");
-            var play = new Button(onPlayAgain) { text = "Play again" };
-            play.AddToClassList("hud-button");
-            play.AddToClassList("result__button");
+            Button play = HudLayer.MakeButton("Play again", onPlayAgain, "result__button");
 
             screen.Add(titleLabel);
             screen.Add(subtitleLabel);
