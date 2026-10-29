@@ -26,6 +26,7 @@ namespace SporeTribal.CameraControl
         private float targetYaw;
         private float targetDistance;
 
+        private float glideSmoothTime;
         private Vector3 focusVelocity;
         private float yawVelocity;
         private float distanceVelocity;
@@ -76,11 +77,16 @@ namespace SporeTribal.CameraControl
 
         private void OnPanDragged(Vector2 delta)
         {
+            glideSmoothTime = 0f;
             float scale = profile.DragPanSpeed * targetDistance;
             Move(-delta.x * scale, -delta.y * scale);
         }
 
-        private void OnPanKeyed(Vector2 dir) => keyInput = dir;
+        private void OnPanKeyed(Vector2 dir)
+        {
+            keyInput = dir;
+            glideSmoothTime = 0f;
+        }
 
         private void OnOrbitDragged(Vector2 delta) => targetYaw += delta.x * profile.OrbitSpeed;
 
@@ -90,6 +96,12 @@ namespace SporeTribal.CameraControl
         }
 
         public void Orbit(float yawDegrees) => targetYaw += yawDegrees;
+
+        public void GlideTo(Vector3 worldPoint, float smoothTime = 0.35f)
+        {
+            FocusOn(worldPoint);
+            glideSmoothTime = smoothTime;
+        }
 
         public void FocusOn(Vector3 worldPoint) => targetFocus = new Vector3(worldPoint.x, 0f, worldPoint.z);
 
@@ -121,7 +133,8 @@ namespace SporeTribal.CameraControl
             UpdatePan(dt);
             targetFocus.y = GroundHeight(targetFocus);
 
-            focus = Vector3.SmoothDamp(focus, targetFocus, ref focusVelocity, profile.AnchorSmoothTime, Mathf.Infinity, dt);
+            if ((focus - targetFocus).sqrMagnitude < 0.04f) glideSmoothTime = 0f;
+            focus = Vector3.SmoothDamp(focus, targetFocus, ref focusVelocity, Mathf.Max(profile.AnchorSmoothTime, glideSmoothTime), Mathf.Infinity, dt);
             yaw = Mathf.SmoothDampAngle(yaw, targetYaw, ref yawVelocity, profile.AzimuthSmoothTime, Mathf.Infinity, dt);
             distance = Mathf.SmoothDamp(distance, targetDistance, ref distanceVelocity, profile.ZoomSmoothTime, Mathf.Infinity, dt);
 

@@ -168,6 +168,7 @@
 
 .result__title--lose {
     color: rgb(255, 110, 110);
+    -unity-text-outline-color: rgb(0, 0, 0);
 }
 
 .result__subtitle {
@@ -182,4 +183,152 @@
     border-radius: 30px;
     font-size: 28px;
     opacity: 0;
+}
+
+.tribe-panel {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    translate: 0 -50%;
+    align-items: center;
+}
+
+.tribe-panel__list {
+    align-items: center;
+}
+
+.tribe-chip {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 12px;
+    border-width: 3px;
+    border-radius: 16px;
+    overflow: hidden;
+    border-color: rgba(0, 0, 0, 0.5);
+    transition-property: scale, border-color;
+    transition-duration: 0.12s;
+    transition-timing-function: ease-out-back;
+}
+
+.tribe-chip:hover {
+    scale: 1.08 1.08;
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+.tribe-chip--chief {
+    margin-bottom: 28px;
+    border-color: rgb(255, 214, 102);
+}
+
+.tribe-chip--selected,
+.tribe-chip--selected:hover {
+    border-color: rgb(255, 255, 255);
+    scale: 1.08 1.08;
+}
+
+.tribe-chip__portrait {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.tribe-chip__tool {
+    position: absolute;
+    left: 2px;
+    bottom: 2px;
+    width: 34px;
+    height: 34px;
+    -unity-background-scale-mode: scale-to-fit;
+    opacity: 0.85;
+}
+
+.tribe-panel__all {
+    margin-bottom: 14px;
+    height: 30px;
+    min-width: 72px;
+    font-size: 16px;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.tribe-chip__track {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 2px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: none;
+}
+
+.tribe-chip--hurt .tribe-chip__track {
+    display: flex;
+}
+
+.tribe-chip__health {
+    height: 6px;
+    border-radius: 3px;
+}
+
+.progress {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    width: 55%;
+    max-width: 760px;
+    translate: -50% 0;
+    align-items: center;
+}
+
+.progress__caption {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.progress__track {
+    align-self: stretch;
+    height: 24px;
+    border-radius: 8px;
+    background-color: rgb(24, 24, 26);
+}
+
+.progress__fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    border-radius: 8px;
+    background-color: rgb(110, 200, 90);
+}
+
+.progress__markers {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.progress-marker {
+    position: absolute;
+    top: -4px;
+    width: 32px;
+    height: 32px;
+    translate: -50% 0;
+    border-radius: 10px;
+    background-color: rgb(24, 24, 26);
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-marker__bead {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+}
+
+.progress-marker--done {
+    background-color: rgb(255, 255, 255);
 }

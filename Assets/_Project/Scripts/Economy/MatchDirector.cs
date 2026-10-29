@@ -1,6 +1,7 @@
 using PrimeTween;
 using SporeTribal.Inputs;
 using SporeTribal.UI;
+using SporeTribal.Villagers;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
@@ -31,11 +32,13 @@ namespace SporeTribal.Economy
         public bool IsOver { get; private set; }
         public MatchOutcome Outcome { get; private set; }
         public bool Halted { get; private set; }
+        public bool Extinct { get; private set; }
 
         public event System.Action<MatchOutcome> Ended;
 
         private Village[] villages;
         private AudioSource sting;
+        private VillageHud hud;
 
         private void Awake()
         {
@@ -51,6 +54,8 @@ namespace SporeTribal.Economy
             Time.timeScale = 1f;
             GameInput.Unlock();
             villages = FindObjectsByType<Village>();
+            VillagerUnit.Died += OnVillagerDied;
+            if (player != null) player.FoodChanged += CheckExtinct;
             foreach (Village v in villages)
             {
                 v.Surrendered += OnChanged;
@@ -60,12 +65,30 @@ namespace SporeTribal.Economy
 
         private void OnDisable()
         {
+            VillagerUnit.Died -= OnVillagerDied;
+            if (player != null) player.FoodChanged -= CheckExtinct;
             foreach (Village v in villages)
             {
                 if (v == null) continue;
                 v.Surrendered -= OnChanged;
                 v.AllianceDeclared -= OnAlliance;
             }
+        }
+
+        private void OnVillagerDied(VillagerUnit unit)
+        {
+            if (unit.Home == player) CheckExtinct();
+        }
+
+        private void CheckExtinct()
+        {
+            if (IsOver) return;
+            if (hud == null) hud = FindAnyObjectByType<VillageHud>();
+            if (hud == null || player.Food >= hud.RecruitCost) return;
+            foreach (VillagerUnit unit in VillagerUnit.All)
+                if (unit.Home == player && unit.IsAlive) return;
+            Extinct = true;
+            End(MatchOutcome.Defeat);
         }
 
         private void OnAlliance(Village a, Village b) => Evaluate();
@@ -136,7 +159,7 @@ namespace SporeTribal.Economy
         {
             MatchOutcome.Conquest => "Their main hut has fallen.",
             MatchOutcome.Alliance => "The tribes stand together.",
-            _ => "Your main hut has fallen.",
+            _ => Extinct ? "Your tribe has died out." : "Your main hut has fallen.",
         };
     }
 }

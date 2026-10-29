@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using PrimeTween;
+using SporeTribal.Audio;
 using SporeTribal.Utilities;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,6 +18,7 @@ namespace SporeTribal.UI
         private static VisualElement layer;
         private static VisualElement toastStack;
         private static Texture2D backdrop;
+        private static readonly List<VisualElement> blockers = new List<VisualElement>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -24,6 +27,7 @@ namespace SporeTribal.UI
             layer = null;
             toastStack = null;
             backdrop = null;
+            blockers.Clear();
         }
 
         public static VisualElement Root
@@ -57,6 +61,36 @@ namespace SporeTribal.UI
             backdrop ??= BuildBackdrop();
             element.AddToClassList("hud-backdrop");
             element.style.backgroundImage = new StyleBackground(backdrop);
+        }
+
+        public static Button MakeButton(string text, System.Action onClick, params string[] classes)
+        {
+            var button = new Button(() =>
+            {
+                AudioManager.PlayUi(SfxId.ButtonClick);
+                onClick();
+            }) { text = text };
+            button.AddToClassList("hud-button");
+            foreach (string c in classes) button.AddToClassList(c);
+            return button;
+        }
+
+        public static void AddBlocker(VisualElement element)
+        {
+            if (!blockers.Contains(element)) blockers.Add(element);
+        }
+
+        public static void RemoveBlocker(VisualElement element) => blockers.Remove(element);
+
+        public static bool IsOverBlocker(Vector2 screen)
+        {
+            foreach (VisualElement element in blockers)
+            {
+                if (element.panel == null || element.resolvedStyle.display == DisplayStyle.None) continue;
+                Vector2 point = RuntimePanelUtils.ScreenToPanel(element.panel, new Vector2(screen.x, Screen.height - screen.y));
+                if (element.worldBound.Contains(point)) return true;
+            }
+            return false;
         }
 
         public static Label MakeLabel(string text, params string[] classes)

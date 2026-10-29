@@ -223,8 +223,11 @@ namespace SporeTribal.Villagers
             WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
         }
 
+        private Sequence topple;
+
         private void OnDestroy()
         {
+            if (topple.isAlive) topple.Stop();
             if (Home != null) Home.Surrendered -= Mourn;
             if (rig != null) Destroy(rig.gameObject);
         }
@@ -553,6 +556,8 @@ namespace SporeTribal.Villagers
         public Vector3[] PathCorners => agent.hasPath ? agent.path.corners : System.Array.Empty<Vector3>();
 
         public bool IsChieftain => isChieftain;
+        public Vector3 FaceCentre => model.FaceCentre;
+        public Vector3 FaceForward => model.FaceForward;
         public void MakeChieftain()
         {
             isChieftain = true;
@@ -1187,7 +1192,7 @@ namespace SporeTribal.Villagers
         private void Topple()
         {
             float y = transform.position.y;
-            Sequence.Create()
+            topple = Sequence.Create()
                 .ChainDelay(2f)
                 .Chain(Tween.PositionY(transform, y - 1.6f, 1f, Ease.Linear))
                 .ChainCallback(gameObject, static go => Destroy(go));

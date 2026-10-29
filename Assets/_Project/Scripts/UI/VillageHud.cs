@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using SporeTribal.AI;
 using SporeTribal.Audio;
 using SporeTribal.Buildings;
@@ -52,12 +53,16 @@ namespace SporeTribal.UI
         private bool popupShown;
         private bool debugVisible;
 
+        public int RecruitCost => recruitCost;
+
         private static InputAction DebugToggle => GameInput.Controls.DevTools.ToggleVillageDebug;
 
         private void OnEnable()
         {
             foodChip = new Rect(Margin, Margin, FoodSize.x, FoodSize.y);
             input.PointerBlocked = Blocked;
+            if (!TryGetComponent(out TribePanel _)) gameObject.AddComponent<TribePanel>();
+            if (!TryGetComponent(out ProgressionBar _)) gameObject.AddComponent<ProgressionBar>();
             DebugToggle.performed += OnDebugToggle;
         }
 
@@ -92,7 +97,7 @@ namespace SporeTribal.UI
         private bool Blocked(Vector2 screen)
         {
             var p = new Vector2(screen.x, Screen.height - screen.y);
-            return foodChip.Contains(p) || (hutOpen && OverPopup(screen)) || (debugVisible && debugPanel.Contains(p));
+            return foodChip.Contains(p) || HudLayer.IsOverBlocker(screen) || (hutOpen && OverPopup(screen)) || (debugVisible && debugPanel.Contains(p));
         }
 
         private bool OverPopup(Vector2 screen)
@@ -127,8 +132,7 @@ namespace SporeTribal.UI
             popup.AddToClassList("hut-popup");
             HudLayer.ApplyBackdrop(popup);
             popup.Add(HudLayer.MakeLabel("Main Hut", "hut-popup__title"));
-            recruitButton = new Button(OnRecruitClicked);
-            recruitButton.AddToClassList("hud-button");
+            recruitButton = HudLayer.MakeButton(null, OnRecruitClicked);
             popup.Add(recruitButton);
             layer.Add(popup);
             popupShown = false;
@@ -198,13 +202,13 @@ namespace SporeTribal.UI
                 HudLayer.Shake(recruitButton);
                 return;
             }
+            AudioManager.PlayUi(SfxId.Recruit);
             HudLayer.Punch(popup);
-            AudioManager.PlayUi(SfxId.Select);
         }
 
         private void DrawDebug()
         {
-            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 4 + Margin);
+            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 5 + Margin);
             GUI.Box(debugPanel, GUIContent.none);
 
             float y = debugPanel.y + 6f;
@@ -228,6 +232,27 @@ namespace SporeTribal.UI
             GUI.enabled = progression != null && progression.HasPendingWave;
             if (GUI.Button(new Rect(debugPanel.x + 6f, y, DebugWidth - 16f, Row - 4f), "Spawn next tribe wave")) progression.SettleNext();
             GUI.enabled = true;
+            y += Row;
+
+            GUI.enabled = selection != null && selection.Selected.Count > 0;
+            if (GUI.Button(new Rect(debugPanel.x + 6f, y, half - 4f, Row - 4f), $"Hurt {DebugHealthStep}")) DebugHealSelected(-DebugHealthStep);
+            if (GUI.Button(new Rect(debugPanel.x + 6f + half, y, half - 4f, Row - 4f), $"Heal {DebugHealthStep}")) DebugHealSelected(DebugHealthStep);
+            GUI.enabled = true;
+        }
+
+        private const int DebugHealthStep = 10;
+        private readonly List<VillagerUnit> debugTargets = new List<VillagerUnit>();
+
+        private void DebugHealSelected(int amount)
+        {
+            debugTargets.Clear();
+            debugTargets.AddRange(selection.Selected);
+            foreach (VillagerUnit unit in debugTargets)
+            {
+                if (unit == null || !unit.IsAlive) continue;
+                if (amount < 0) unit.Health.Damage(-amount, null);
+                else unit.Health.Heal(amount);
+            }
         }
 
         private static readonly InstrumentKind[] DebugHandout = { InstrumentKind.Didgeridoo, InstrumentKind.Horn, InstrumentKind.Maraca };
@@ -269,7 +294,8 @@ namespace SporeTribal.UI
         private bool Recruit()
         {
             if (!TryFindSpawnPoint(out Vector3 point) || !village.TrySpend(recruitCost)) return false;
-            spawner.SpawnAt(point);
+            VillagerUnit recruit = spawner.SpawnAt(point);
+            if (!village.HasLivingChieftain()) recruit.MakeChieftain();
             return true;
         }
 

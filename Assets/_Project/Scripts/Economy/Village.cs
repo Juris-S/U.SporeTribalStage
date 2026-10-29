@@ -44,6 +44,7 @@ namespace SporeTribal.Economy
         private readonly Dictionary<Village, int> opinions = new Dictionary<Village, int>();
         private float soothedUntil;
 
+        public event Action FoodChanged;
         public event Action<Vector3> Attacked;
         public event Action<Village> Surrendered;
         public event Action<Village, Village> AllianceDeclared;
@@ -54,8 +55,19 @@ namespace SporeTribal.Economy
         public float DropOffRadius => dropOffRadius;
         public Vector3 DropOffCentre => (dropOffPoint != null ? dropOffPoint : transform).position;
         public StandingSpots Spots { get; private set; }
-        public int Food { get; private set; }
+        private int food;
+        public int Food
+        {
+            get => food;
+            private set
+            {
+                if (food == value) return;
+                food = value;
+                FoodChanged?.Invoke();
+            }
+        }
         public Color TribeColour => tribeColour;
+        public string TribeName => string.IsNullOrEmpty(tribeName) ? "Your" : tribeName;
 
         public string ColouredName => string.IsNullOrEmpty(tribeName) ? "rival" : $"<color=#{ColorUtility.ToHtmlStringRGB(tribeColour)}>{tribeName}</color>";
 
