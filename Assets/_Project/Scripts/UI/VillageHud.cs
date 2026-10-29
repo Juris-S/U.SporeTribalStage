@@ -37,6 +37,7 @@ namespace SporeTribal.UI
 
         private SelectionController selection;
         private SocialPerformanceDirector director;
+        private TribeProgressionDirector progression;
         private MainHut hut;
         private bool hutOpen;
         private float hutCloseAt;
@@ -128,7 +129,7 @@ namespace SporeTribal.UI
 
         private void DrawDebug()
         {
-            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 3 + Margin);
+            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 4 + Margin);
             GUI.Box(debugPanel, GUIContent.none);
 
             float y = debugPanel.y + 6f;
@@ -146,6 +147,12 @@ namespace SporeTribal.UI
             float half = (DebugWidth - 12f) / 2f;
             if (GUI.Button(new Rect(debugPanel.x + 6f, y, half - 4f, Row - 4f), "Equip band")) DebugEquipBand();
             if (GUI.Button(new Rect(debugPanel.x + 6f + half, y, half - 4f, Row - 4f), "Go to rival")) DebugWarpToRival();
+            y += Row;
+
+            if (progression == null) progression = FindAnyObjectByType<TribeProgressionDirector>();
+            GUI.enabled = progression != null && progression.HasPendingWave;
+            if (GUI.Button(new Rect(debugPanel.x + 6f, y, DebugWidth - 16f, Row - 4f), "Spawn next tribe wave")) progression.SettleNext();
+            GUI.enabled = true;
         }
 
         private static readonly InstrumentKind[] DebugHandout = { InstrumentKind.Didgeridoo, InstrumentKind.Horn, InstrumentKind.Maraca };

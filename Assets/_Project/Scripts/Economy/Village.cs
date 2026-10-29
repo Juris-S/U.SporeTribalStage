@@ -79,6 +79,11 @@ namespace SporeTribal.Economy
             return value < AllianceThreshold ? RelationshipTier.Friendly : RelationshipTier.Allied;
         }
 
+        public void SetOpening(Village towards, int value)
+        {
+            if (towards != null && towards != this) opinions[towards] = ClampRelationship(value);
+        }
+
         public void Soothe() => soothedUntil = Time.time + soothingSongSeconds;
 
         public void Offend(Village by, int amount)

@@ -20,6 +20,7 @@ namespace SporeTribal.Economy
         [SerializeField, ColorUsage(true, true)] private Color ringColor = new Color(1f, 1f, 1f, 0.35f);
 
         private const float RingLift = 0.03f;
+        private const float RingProbe = 5f;
         private const float MinScale = 0.01f;
 
         private int food;
@@ -41,7 +42,10 @@ namespace SporeTribal.Economy
         private GameObject CreateTargetRing()
         {
             Transform target = GroundRing.Create("TargetRing", ringMaterial, ringColor, transform).transform;
-            target.position = new Vector3(transform.position.x, RingLift, transform.position.z);
+            Vector3 at = transform.position;
+            bool onGround = Physics.Raycast(at + Vector3.up * RingProbe, Vector3.down, out RaycastHit ground, RingProbe * 2f, LayerMask.GetMask("Ground"));
+            target.position = new Vector3(at.x, (onGround ? ground.point.y : at.y) + RingLift, at.z);
+            if (onGround) target.rotation = Quaternion.FromToRotation(Vector3.up, ground.normal) * target.rotation;
             target.localScale = Vector3.one * ringSize / Mathf.Max(transform.lossyScale.x, MinScale);
             target.gameObject.SetActive(false);
             return target.gameObject;

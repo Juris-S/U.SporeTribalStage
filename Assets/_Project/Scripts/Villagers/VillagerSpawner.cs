@@ -13,6 +13,8 @@ namespace SporeTribal.Villagers
 
         public Village Village => village;
 
+        public void SetRegulars(int count) => regulars = count;
+
         private void Start()
         {
             int total = regulars + 1;
