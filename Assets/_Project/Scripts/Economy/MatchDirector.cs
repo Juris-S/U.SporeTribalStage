@@ -15,6 +15,7 @@ namespace SporeTribal.Economy
     {
         [Tooltip("The player's tribe.")]
         [SerializeField] private Village player;
+        private Village lastFallen;
         [Tooltip("Real seconds the world takes to ease from full speed to a stop.")]
         [SerializeField, Min(0.1f)] private float slowDownSeconds = 2.5f;
         [Tooltip("One is picked at random when the player wins (and from Defeat Clips when they lose).")]
@@ -92,7 +93,11 @@ namespace SporeTribal.Economy
         }
 
         private void OnAlliance(Village a, Village b) => Evaluate();
-        private void OnChanged(Village _) => Evaluate();
+        private void OnChanged(Village who)
+        {
+            if (who != player) lastFallen = who;
+            Evaluate();
+        }
 
         private void Evaluate()
         {
@@ -157,7 +162,7 @@ namespace SporeTribal.Economy
 
         private string Subtitle() => Outcome switch
         {
-            MatchOutcome.Conquest => "Their main hut has fallen.",
+            MatchOutcome.Conquest => lastFallen != null ? $"The {lastFallen.ColouredName} tribe's main hut has fallen." : "Their main hut has fallen.",
             MatchOutcome.Alliance => "The tribes stand together.",
             _ => Extinct ? "Your tribe has died out." : "Your main hut has fallen.",
         };

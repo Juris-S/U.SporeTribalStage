@@ -227,6 +227,26 @@ namespace SporeTribal.Economy
             if (HasPendingWave) Settle(nextWave++);
         }
 
+        public bool ResolveNext(bool conquer)
+        {
+            Rival next = NextUnresolved();
+            if (next == null && HasPendingWave)
+            {
+                SettleNext();
+                next = NextUnresolved();
+            }
+            if (next == null) return false;
+            if (conquer) next.Village.Surrender(); else next.Village.DeclareAlliance(player);
+            return true;
+        }
+
+        private Rival NextUnresolved()
+        {
+            foreach (Rival rival in rivals)
+                if (rival.Arrived && !IsResolved(rival.Village)) return rival;
+            return null;
+        }
+
         private bool ShouldSettle(Wave wave)
         {
             if (Time.time - startTime >= wave.delaySeconds && Resolved >= wave.resolvedToTrigger) return true;

@@ -63,6 +63,7 @@ namespace SporeTribal.UI
             input.PointerBlocked = Blocked;
             if (!TryGetComponent(out TribePanel _)) gameObject.AddComponent<TribePanel>();
             if (!TryGetComponent(out ProgressionBar _)) gameObject.AddComponent<ProgressionBar>();
+            if (!TryGetComponent(out Minimap _)) gameObject.AddComponent<Minimap>();
             DebugToggle.performed += OnDebugToggle;
         }
 
@@ -208,7 +209,7 @@ namespace SporeTribal.UI
 
         private void DrawDebug()
         {
-            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 5 + Margin);
+            debugPanel = new Rect(Margin, foodChip.yMax + Margin, DebugWidth, Row * 6 + Margin);
             GUI.Box(debugPanel, GUIContent.none);
 
             float y = debugPanel.y + 6f;
@@ -237,6 +238,12 @@ namespace SporeTribal.UI
             GUI.enabled = selection != null && selection.Selected.Count > 0;
             if (GUI.Button(new Rect(debugPanel.x + 6f, y, half - 4f, Row - 4f), $"Hurt {DebugHealthStep}")) DebugHealSelected(-DebugHealthStep);
             if (GUI.Button(new Rect(debugPanel.x + 6f + half, y, half - 4f, Row - 4f), $"Heal {DebugHealthStep}")) DebugHealSelected(DebugHealthStep);
+            GUI.enabled = true;
+            y += Row;
+
+            GUI.enabled = progression != null;
+            if (GUI.Button(new Rect(debugPanel.x + 6f, y, half - 4f, Row - 4f), "Conquer next")) progression.ResolveNext(true);
+            if (GUI.Button(new Rect(debugPanel.x + 6f + half, y, half - 4f, Row - 4f), "Ally next")) progression.ResolveNext(false);
             GUI.enabled = true;
         }
 

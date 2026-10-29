@@ -124,10 +124,10 @@ namespace SporeTribal.UI
                 .OnComplete(element, static el => el.style.display = DisplayStyle.None);
         }
 
-        public static void Punch(VisualElement element, float amount = 0.12f)
+        public static void Punch(VisualElement element, float amount = 0.12f, float seconds = 0.25f)
         {
             Tween.StopAll(element);
-            Tween.Custom(element, 1f + amount, 1f, 0.25f, static (el, s) => el.style.scale = new Scale(new Vector2(s, s)), Ease.OutBack, useUnscaledTime: true)
+            Tween.Custom(element, 1f + amount, 1f, seconds, static (el, s) => el.style.scale = new Scale(new Vector2(s, s)), Ease.OutBack, useUnscaledTime: true)
                 .OnComplete(element, static el => el.style.scale = StyleKeyword.Null);
         }
 

@@ -201,10 +201,10 @@
     width: 72px;
     height: 72px;
     margin-bottom: 12px;
-    border-width: 3px;
-    border-radius: 16px;
+    border-width: 4px;
+    border-radius: 18px;
     overflow: hidden;
-    border-color: rgba(0, 0, 0, 0.5);
+    border-color: rgb(255, 252, 244);
     transition-property: scale, border-color;
     transition-duration: 0.12s;
     transition-timing-function: ease-out-back;
@@ -212,7 +212,7 @@
 
 .tribe-chip:hover {
     scale: 1.08 1.08;
-    border-color: rgba(255, 255, 255, 0.7);
+    border-color: rgb(255, 255, 255);
 }
 
 .tribe-chip--chief {
@@ -222,8 +222,8 @@
 
 .tribe-chip--selected,
 .tribe-chip--selected:hover {
-    border-color: rgb(255, 255, 255);
-    scale: 1.08 1.08;
+    border-color: rgb(96, 176, 255);
+    scale: 1.1 1.1;
 }
 
 .tribe-chip__portrait {
@@ -241,25 +241,32 @@
     width: 34px;
     height: 34px;
     -unity-background-scale-mode: scale-to-fit;
-    opacity: 0.85;
+    opacity: 0.95;
 }
 
 .tribe-panel__all {
     margin-bottom: 14px;
-    height: 30px;
+    height: 32px;
     min-width: 72px;
+    padding: 0 18px 3px 18px;
     font-size: 16px;
-    background-color: rgba(0, 0, 0, 0.5);
+    color: rgb(58, 46, 40);
+    -unity-text-outline-width: 0;
+    background-color: rgb(255, 252, 244);
+}
+
+.tribe-panel__all:hover {
+    background-color: rgb(255, 255, 255);
 }
 
 .tribe-chip__track {
     position: absolute;
     left: 12px;
     right: 12px;
-    bottom: 2px;
-    height: 6px;
-    border-radius: 3px;
-    background-color: rgba(0, 0, 0, 0.6);
+    bottom: 3px;
+    height: 7px;
+    border-radius: 4px;
+    background-color: rgb(255, 252, 244);
     display: none;
 }
 
@@ -268,18 +275,20 @@
 }
 
 .tribe-chip__health {
-    height: 6px;
-    border-radius: 3px;
+    height: 7px;
+    border-radius: 4px;
 }
 
 .progress {
     position: absolute;
     left: 50%;
-    bottom: 14px;
+    bottom: 22px;
     width: 55%;
     max-width: 760px;
+    padding: 3px;
     translate: -50% 0;
-    align-items: center;
+    border-radius: 14px;
+    background-color: rgb(255, 252, 244);
 }
 
 .progress__caption {
@@ -289,9 +298,9 @@
 
 .progress__track {
     align-self: stretch;
-    height: 24px;
-    border-radius: 8px;
-    background-color: rgb(24, 24, 26);
+    height: 22px;
+    border-radius: 11px;
+    background-color: rgb(40, 46, 72);
 }
 
 .progress__fill {
@@ -299,7 +308,10 @@
     left: 0;
     top: 0;
     bottom: 0;
-    border-radius: 8px;
+    border-top-left-radius: 11px;
+    border-bottom-left-radius: 11px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
     background-color: rgb(110, 200, 90);
 }
 
@@ -313,22 +325,197 @@
 
 .progress-marker {
     position: absolute;
-    top: -4px;
-    width: 32px;
-    height: 32px;
+    top: -9px;
+    width: 40px;
+    height: 40px;
     translate: -50% 0;
-    border-radius: 10px;
-    background-color: rgb(24, 24, 26);
+    border-radius: 20px;
+    background-color: rgb(255, 252, 244);
     align-items: center;
     justify-content: center;
 }
 
 .progress-marker__bead {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    align-items: center;
+    justify-content: center;
+}
+
+.progress-marker__glyph {
+    width: 20px;
+    height: 20px;
+    -unity-background-scale-mode: scale-to-fit;
 }
 
 .progress-marker--done {
+    background-color: rgb(255, 226, 130);
+}
+
+.minimap {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    width: 220px;
+    height: 220px;
+}
+
+.minimap__ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 200px;
+    height: 200px;
+    border-radius: 100px;
+    background-color: rgb(255, 252, 244);
+}
+
+.minimap__view {
+    position: absolute;
+    left: 7px;
+    top: 7px;
+    width: 186px;
+    height: 186px;
+    border-radius: 93px;
+    overflow: hidden;
+    background-color: rgb(60, 110, 150);
+}
+
+.minimap__image {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.minimap__dots {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.minimap__dot {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-radius: 5px;
+    translate: -50% -50%;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(40, 46, 72);
+}
+
+.minimap__dot-fill {
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+}
+
+.minimap__dot--mine {
+    width: 11px;
+    height: 11px;
+    border-radius: 6px;
+}
+
+.minimap__dot--mine .minimap__dot-fill {
+    width: 7px;
+    height: 7px;
+    border-radius: 4px;
+}
+
+.minimap__dot--chief,
+.minimap__dot--mine.minimap__dot--chief {
+    width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    background-color: rgb(255, 214, 102);
+}
+
+.minimap__dot--chief .minimap__dot-fill,
+.minimap__dot--mine.minimap__dot--chief .minimap__dot-fill {
+    width: 9px;
+    height: 9px;
+    border-radius: 5px;
+}
+
+.minimap__arrow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    translate: -50% -50%;
     background-color: rgb(255, 255, 255);
+}
+
+.minimap__zoom {
+    position: absolute;
+    width: 38px;
+    height: 38px;
+    padding: 0 0 4px 0;
+    border-radius: 19px;
+    font-size: 26px;
+    color: rgb(58, 46, 40);
+    -unity-text-outline-width: 0;
+    background-color: rgb(255, 252, 244);
+}
+
+.minimap__zoom:hover {
+    background-color: rgb(255, 255, 255);
+}
+
+.minimap__zoom--in {
+    left: 176px;
+    top: 62px;
+}
+
+.minimap__zoom--out {
+    left: 174px;
+    top: 108px;
+}
+
+.minimap__food {
+    position: absolute;
+    left: 12px;
+    top: 156px;
+    width: 130px;
+    height: 44px;
+    padding: 0 16px 0 48px;
+    border-radius: 22px;
+    flex-direction: row;
+    align-items: center;
+    background-color: rgb(255, 252, 244);
+}
+
+.minimap__food-icon {
+    position: absolute;
+    left: -8px;
+    top: -3px;
+    width: 50px;
+    height: 50px;
+    border-radius: 25px;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(40, 46, 72);
+    border-width: 3px;
+    border-color: rgb(255, 252, 244);
+}
+
+.minimap__food-glyph {
+    width: 26px;
+    height: 26px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.minimap__food-count {
+    font-size: 30px;
+    color: rgb(58, 46, 40);
+    -unity-text-outline-width: 0;
+    padding: 0 0 2px 0;
+    -unity-text-align: middle-left;
 }
