@@ -131,6 +131,7 @@ namespace SporeTribal.CameraControl
         {
             float dt = Time.unscaledDeltaTime;
             UpdatePan(dt);
+            ClampToIsland();
             targetFocus.y = GroundHeight(targetFocus);
 
             if ((focus - targetFocus).sqrMagnitude < 0.04f) glideSmoothTime = 0f;
@@ -142,6 +143,17 @@ namespace SporeTribal.CameraControl
             float pitch = Mathf.Lerp(profile.PitchRange.x, profile.PitchRange.y, zoom01);
             var rotation = Quaternion.Euler(pitch, yaw, 0f);
             transform.SetPositionAndRotation(focus - rotation * Vector3.forward * distance, rotation);
+        }
+
+        private void ClampToIsland()
+        {
+            var flat = new Vector2(targetFocus.x, targetFocus.z);
+            float max = profile.MaxFocusRadius;
+            if (flat.sqrMagnitude <= max * max) return;
+
+            flat = flat.normalized * max;
+            targetFocus.x = flat.x;
+            targetFocus.z = flat.y;
         }
 
         private float GroundHeight(Vector3 at)

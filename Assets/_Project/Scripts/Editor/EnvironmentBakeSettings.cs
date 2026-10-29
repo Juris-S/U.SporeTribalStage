@@ -7,6 +7,8 @@ namespace SporeTribal.EditorTools
     [CreateAssetMenu(menuName = "Tribal/Editor/Environment Bake Settings", fileName = "EnvironmentBakeSettings")]
     public class EnvironmentBakeSettings : ScriptableObject
     {
+        private const float ReferenceIslandRadius = 95f;
+
         [Header("Baked textures")]
         [Tooltip("Overwritten by Tools > Tribal > Build Cloud Texture.")]
         [SerializeField] private Texture2D cloudShadows;
@@ -57,6 +59,20 @@ namespace SporeTribal.EditorTools
         [Tooltip("Distance over which the ground rises from flat village ground to full height.")]
         [SerializeField] private float hillBlend = 12f;
 
+        [Header("Island")]
+        [Tooltip("Side length of the square ground mesh, in metres. Must exceed twice the island radius plus the shore width.")]
+        [SerializeField] private float groundSize = 400f;
+        [Tooltip("Radius of the dry land around the world origin, in metres. Keep it above the camera's max focus radius.")]
+        [SerializeField] private float islandRadius = 150f;
+        [Tooltip("Width of the slope from the island edge down to the sea floor, in metres.")]
+        [SerializeField] private float shoreWidth = 36f;
+        [Tooltip("How far below the flat ground the sea floor sits, in metres.")]
+        [SerializeField] private float seaDepth = 3f;
+        [Tooltip("Height of the water surface in world space.")]
+        [SerializeField] private float seaLevel = -0.4f;
+        [Tooltip("Width of the sand band that runs up the beach from the water line, in metres.")]
+        [SerializeField] private float sandWidth = 14f;
+
         [Header("Clearances")]
         [SerializeField] private float buildingClearance = 7f;
         [SerializeField] private float villageClearance = 9f;
@@ -81,17 +97,41 @@ namespace SporeTribal.EditorTools
         public Texture2D GroundMask => groundMask;
         public string GrassMeshFolder => AssetDatabase.GetAssetPath(grassMeshFolder);
         public int Seed => seed;
-        public float HalfSize => halfSize;
-        public float ForestEdge => forestEdge;
+        public float AreaScale => islandRadius / ReferenceIslandRadius;
+        public float HalfSize => islandRadius;
+        public float ForestEdge => forestEdge * AreaScale;
         public float GrassChunk => grassChunk;
-        public int MaskResolution => maskResolution;
-        public float MaskSize => maskSize;
+        public int Scaled(int count) => Mathf.RoundToInt(count * AreaScale * AreaScale);
+        public int MaskResolution => Mathf.ClosestPowerOfTwo(Mathf.RoundToInt(maskResolution * AreaScale));
+        public float MaskSize => groundSize;
+        public float GroundSize => groundSize;
         public float MaskOrigin => -maskSize * 0.5f;
         public float BushSink => bushSink;
         public float HillHeight => hillHeight;
         public float HillWavelength => hillWavelength;
         public float HillThreshold => hillThreshold;
         public float HillBlend => hillBlend;
+        public float IslandRadius => islandRadius;
+        public float ShoreWidth => shoreWidth;
+        public float SeaDepth => seaDepth;
+        public float SeaLevel => seaLevel;
+        public float SandWidth => sandWidth;
+
+        public float WaterlineRadius
+        {
+            get
+            {
+                float target = Mathf.Clamp01(-seaLevel / Mathf.Max(seaDepth, 0.01f));
+                float low = 0f, high = 1f;
+                for (int i = 0; i < 24; i++)
+                {
+                    float mid = (low + high) * 0.5f;
+                    if (mid * mid * (3f - 2f * mid) < target) low = mid;
+                    else high = mid;
+                }
+                return islandRadius + low * shoreWidth;
+            }
+        }
         public float BuildingClearance => buildingClearance;
         public float VillageClearance => villageClearance;
         public float FoodClearance => foodClearance;

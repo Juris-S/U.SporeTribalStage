@@ -19,6 +19,8 @@ namespace SporeTribal.Economy
         [SerializeField] private Vector2 villageRing = new Vector2(18f, 34f);
         [SerializeField] private float minSpacing = 14f;
         [SerializeField] private float edgeMargin = 8f;
+        [Tooltip("Bushes stay within this fraction of half the ground width, so none land on the beach or in the sea.")]
+        [SerializeField, Range(0.3f, 0.9f)] private float landFraction = 0.68f;
         [SerializeField] private float villageClearance = 12f;
         [SerializeField] private float buildingClearance = 8f;
         [Tooltip("Radius around a spot that must be free of trees, rocks and other colliders.")]
@@ -28,6 +30,7 @@ namespace SporeTribal.Economy
         [SerializeField] private float sink = 0.12f;
         [SerializeField, Min(1)] private int attemptsPerBush = 30;
 
+        private float landRadius;
         private const float RayHeight = 100f;
         private const float NavMeshSnap = 1.5f;
 
@@ -43,6 +46,7 @@ namespace SporeTribal.Economy
 
             List<Keepout> keepouts = CollectKeepouts();
             Bounds area = ground.bounds;
+            landRadius = area.extents.x * landFraction;
             int groundMask = LayerMask.GetMask("Ground");
             int nearVillages = 0, scattered = 0;
 
@@ -80,7 +84,8 @@ namespace SporeTribal.Economy
             {
                 Vector2 flat = candidate();
                 bool inside = flat.x > area.min.x + edgeMargin && flat.x < area.max.x - edgeMargin
-                    && flat.y > area.min.z + edgeMargin && flat.y < area.max.z - edgeMargin;
+                    && flat.y > area.min.z + edgeMargin && flat.y < area.max.z - edgeMargin
+                    && flat.sqrMagnitude < landRadius * landRadius;
                 if (!inside || IsBlocked(keepouts, flat) || !TryFindSurface(flat.x, flat.y, area.max.y, groundMask, out Vector3 point)) continue;
 
                 GameObject prefab = rng.Pick(prefabs);

@@ -6,6 +6,7 @@ using SporeTribal.Rendering;
 using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.AI;
 using Random = System.Random;
 
 namespace SporeTribal.EditorTools
@@ -108,12 +109,56 @@ namespace SporeTribal.EditorTools
 
         private static void RebakeNavMesh()
         {
+            BuildSeaBlockers();
             foreach (var surface in Object.FindObjectsByType<NavMeshSurface>())
             {
                 surface.layerMask = ~(1 << IgnoreRaycastLayer);
                 surface.BuildNavMesh();
                 SaveNavMeshAsset(surface);
                 EditorUtility.SetDirty(surface);
+            }
+            ReportSpawnCoverage();
+        }
+
+        private static void ReportSpawnCoverage()
+        {
+            int missing = 0;
+            foreach (var spawner in Object.FindObjectsByType<SporeTribal.Villagers.VillagerSpawner>())
+            {
+                Vector3 at = spawner.transform.position;
+                if (NavMesh.SamplePosition(at, out _, 1.5f, NavMesh.AllAreas)) continue;
+                missing++;
+                Debug.LogWarning($"Navmesh bake: no walkable ground within 1.5 m of {spawner.name} at {at}.", spawner);
+            }
+            Debug.Log(missing == 0 ? "Navmesh bake: every villager spawner has walkable ground." : $"Navmesh bake: {missing} spawner(s) have no walkable ground.");
+        }
+
+        private static void BuildSeaBlockers()
+        {
+            const string rootName = "Sea NavMesh Blockers";
+            const int sides = 24;
+            const float depth = 80f;
+
+            GameObject existing = GameObject.Find(rootName);
+            if (existing != null) Undo.DestroyObjectImmediate(existing);
+
+            float shore = settings.IslandRadius;
+            float width = 2f * (shore + depth) * Mathf.Tan(Mathf.PI / sides) + 4f;
+            int notWalkable = NavMesh.GetAreaFromName("Not Walkable");
+
+            var root = new GameObject(rootName);
+            Undo.RegisterCreatedObjectUndo(root, "Scatter Nature");
+            for (int i = 0; i < sides; i++)
+            {
+                float angle = i * Mathf.PI * 2f / sides;
+                var outward = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                var piece = new GameObject($"Blocker {i}");
+                piece.transform.SetParent(root.transform, false);
+                piece.transform.SetPositionAndRotation(outward * (shore + depth * 0.5f), Quaternion.LookRotation(outward));
+                var volume = piece.AddComponent<NavMeshModifierVolume>();
+                volume.size = new Vector3(width, 60f, depth);
+                volume.center = Vector3.zero;
+                volume.area = notWalkable;
             }
         }
 
@@ -130,7 +175,7 @@ namespace SporeTribal.EditorTools
         private static void ScatterForest(GameObject group, Random rng, List<Keepout> keepouts)
         {
             var treeMaterial = PrepareFoliage(settings.TreeFoliage, 0.012f, 0.025f);
-            for (int i = 0; i < 700; i++)
+            for (int i = 0; i < settings.Scaled(700); i++)
             {
                 var p = RandomPoint(rng, settings.HalfSize);
                 float edge = Mathf.Max(Mathf.Abs(p.x), Mathf.Abs(p.y));
@@ -138,7 +183,7 @@ namespace SporeTribal.EditorTools
                 Place(group, rng.NextDouble() < 0.12 ? settings.BareTrees : settings.Trees, p, rng, 0.9f, 1.4f, treeMaterial);
             }
 
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < settings.Scaled(500); i++)
             {
                 var p = RandomPoint(rng, settings.ForestEdge);
                 float n = Mathf.PerlinNoise(p.x * 0.05f + 40f, p.y * 0.05f + 40f);
@@ -149,7 +194,7 @@ namespace SporeTribal.EditorTools
 
         private static void ScatterRocks(GameObject group, Random rng, List<Keepout> keepouts, List<Vector2> villages)
         {
-            for (int i = 0; i < 90; i++)
+            for (int i = 0; i < settings.Scaled(90); i++)
             {
                 var p = RandomPoint(rng, settings.HalfSize - 4f);
                 if (IsBlocked(p, keepouts, 1f)) continue;
@@ -168,7 +213,7 @@ namespace SporeTribal.EditorTools
         private static void ScatterBushes(GameObject group, Random rng, List<Keepout> keepouts, List<Vector2> villages)
         {
             var bushMaterial = PrepareFoliage(settings.BushFoliage, 0.07f, 0.015f);
-            for (int i = 0; i < 160; i++)
+            for (int i = 0; i < settings.Scaled(160); i++)
             {
                 var p = RandomPoint(rng, settings.HalfSize - 2f);
                 float n = Mathf.PerlinNoise(p.x * 0.08f + 7f, p.y * 0.08f + 19f);
@@ -192,7 +237,7 @@ namespace SporeTribal.EditorTools
             var chunks = new Dictionary<Vector2Int, List<CombineInstance>>();
             int tufts = 0;
 
-            for (int i = 0; i < 160000; i++)
+            for (int i = 0; i < settings.Scaled(160000); i++)
             {
                 var p = RandomPoint(rng, settings.HalfSize);
                 float density = GrassDensity(p, mask, keepouts);
@@ -444,6 +489,8 @@ namespace SporeTribal.EditorTools
 
         private static bool IsBlocked(Vector2 p, List<Keepout> keepouts, float margin)
         {
+            if (p.magnitude > settings.IslandRadius - settings.SandWidth) return true;
+
             foreach (var k in keepouts)
                 if ((p - k.Center).sqrMagnitude < (k.Radius + margin) * (k.Radius + margin))
                     return true;
