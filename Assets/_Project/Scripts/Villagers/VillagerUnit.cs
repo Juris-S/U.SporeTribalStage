@@ -144,8 +144,12 @@ namespace SporeTribal.Villagers
         private float nextGlanceTime;
         private float nextFidgetTime;
         private float fidgetYaw;
-        private const float RingLift = 0.03f;
+        private const float RingLift = 0.06f;
         private const float RingGroundSearch = 3f;
+        private const float RingDrapeHeight = 12f;
+        private readonly Vector3[] ringCorners = new Vector3[4];
+        private Mesh ringMesh;
+        private float ringHalfSize;
         private static int GroundMask => LayerMask.GetMask("Ground");
         private VillagerVisualRig rig;
         private float glanceYaw;
@@ -230,6 +234,7 @@ namespace SporeTribal.Villagers
             if (topple.isAlive) topple.Stop();
             if (Home != null) Home.Surrendered -= Mourn;
             if (rig != null) Destroy(rig.gameObject);
+            if (ringMesh != null) Destroy(ringMesh);
         }
 
         private void BuildVisualRig()
@@ -432,18 +437,37 @@ namespace SporeTribal.Villagers
         {
             LimitStep();
             if (!markerRing.activeSelf) return;
-            Transform ring = markerRing.transform;
             Vector3 at = transform.position;
-            Quaternion tilt = Quaternion.identity;
-            if (Physics.Raycast(at + Vector3.up * RingGroundSearch, Vector3.down, out RaycastHit hit, RingGroundSearch * 2f, GroundMask))
-            {
-                at.y = hit.point.y;
-                tilt = Quaternion.FromToRotation(Vector3.up, hit.normal);
-            }
+            if (Physics.Raycast(at + Vector3.up * RingGroundSearch, Vector3.down, out RaycastHit hit, RingGroundSearch * 2f, GroundMask)) at.y = hit.point.y;
             else if (NavMesh.SamplePosition(at, out NavMeshHit ground, RingGroundSearch, NavMesh.AllAreas)) at.y = ground.position.y;
-            ring.SetPositionAndRotation(
-                new Vector3(at.x, at.y + RingLift, at.z),
-                tilt * Quaternion.Euler(0f, transform.eulerAngles.y, 0f) * Quaternion.Euler(90f, 0f, 0f));
+            markerRing.transform.SetPositionAndRotation(at, Quaternion.identity);
+            DrapeRing(at);
+        }
+
+        private void DrapeRing(Vector3 centre)
+        {
+            if (ringMesh == null)
+            {
+                ringHalfSize = markerRing.transform.localScale.x * 0.5f;
+                markerRing.transform.localScale = Vector3.one;
+                ringMesh = new Mesh { name = "SelectionRingDraped" };
+                ringMesh.MarkDynamic();
+                ringMesh.vertices = ringCorners;
+                ringMesh.uv = new[] { new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 1f), new Vector2(1f, 1f) };
+                ringMesh.triangles = new[] { 0, 2, 1, 1, 2, 3 };
+                markerRing.GetComponent<MeshFilter>().sharedMesh = ringMesh;
+            }
+            for (int i = 0; i < ringCorners.Length; i++)
+            {
+                float x = (i & 1) == 0 ? -ringHalfSize : ringHalfSize;
+                float z = (i & 2) == 0 ? -ringHalfSize : ringHalfSize;
+                float y = 0f;
+                if (Physics.Raycast(new Vector3(centre.x + x, centre.y + RingDrapeHeight, centre.z + z), Vector3.down, out RaycastHit hit, RingDrapeHeight * 2f, GroundMask))
+                    y = hit.point.y - centre.y;
+                ringCorners[i] = new Vector3(x, y + RingLift, z);
+            }
+            ringMesh.vertices = ringCorners;
+            ringMesh.RecalculateBounds();
         }
 
         private void ScheduleGlance() => nextGlanceTime = Time.time + Random.Range(idleGlanceInterval.x, idleGlanceInterval.y);
