@@ -20,6 +20,8 @@ namespace SporeTribal.Rendering
         [SerializeField] private float groundHeight;
         [Tooltip("Off keeps the Scene and Game views clear while editing; the fog only applies in play mode.")]
         [SerializeField] private bool fogInEditMode;
+        [Tooltip("Off keeps the Scene view clear, even while playing. Also toggled from the Scene view overlay.")]
+        [SerializeField] private bool fogInSceneView;
 
         private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 
@@ -31,7 +33,10 @@ namespace SporeTribal.Rendering
 
         private void OnBeginCameraRendering(ScriptableRenderContext context, Camera cam)
         {
-            if (!Application.isPlaying && !fogInEditMode)
+            bool visible = cam.cameraType == CameraType.SceneView
+                ? fogInSceneView
+                : Application.isPlaying || fogInEditMode;
+            if (!visible)
             {
                 Shader.SetGlobalVector(ParamsId, Vector4.zero);
                 return;
