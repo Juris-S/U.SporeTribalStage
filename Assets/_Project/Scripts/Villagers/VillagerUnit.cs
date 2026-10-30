@@ -221,10 +221,21 @@ namespace SporeTribal.Villagers
         {
             if (Home == null) return;
             Home.Surrendered += Mourn;
-            skinTone = RollSkinTone(Home);
+            if (!colourOverride.HasValue) skinTone = RollSkinTone(Home);
             Repaint(false);
             TintHeadgear();
-            WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
+            if (!colourOverride.HasValue) WanderNear(Home, Random.Range(wanderInterval.x, wanderInterval.y));
+        }
+
+        private Color? colourOverride;
+        private Color? TribeTint => colourOverride ?? (Home != null ? Home.TribeColour : (Color?)null);
+
+        public void PreviewTribeColour(Color colour, float skinPosition)
+        {
+            colourOverride = colour;
+            skinTone = SampleSkinTones(skinPosition);
+            Repaint(false);
+            TintHeadgear();
         }
 
         private Sequence topple;
@@ -299,7 +310,7 @@ namespace SporeTribal.Villagers
 
         private void Repaint(bool flash)
         {
-            Color tribe = Home != null ? Home.TribeColour : hitFlashColour;
+            Color tribe = TribeTint ?? hitFlashColour;
             model.SetSkin(flash ? hitFlashColour : skinTone);
             model.SetClothing(flash ? hitFlashColour : tribe);
         }
@@ -1231,12 +1242,13 @@ namespace SporeTribal.Villagers
 
         private void TintHeadgear()
         {
-            if (headgearTribeParts == null || Home == null) return;
+            if (headgearTribeParts == null || TribeTint == null) return;
+            Color tint = TribeTint.Value;
             for (int i = 0; i < headgearTribeParts.Length; i++)
             {
                 Renderer part = headgearTribeParts[i];
                 if (part == null) continue;
-                Color colour = i == 0 ? Home.TribeColour : Home.TribeColour * headgearBandShade;
+                Color colour = i == 0 ? tint : tint * headgearBandShade;
                 colour.a = 1f;
                 var partBlock = new MaterialPropertyBlock();
                 partBlock.SetColor(BaseColorId, colour);

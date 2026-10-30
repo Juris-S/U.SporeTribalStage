@@ -151,6 +151,7 @@ namespace SporeTribal.Economy
         }
 
         public int RivalCount => rivals.Count;
+        public IReadOnlyList<TribeColour> Palette => tribeColours;
 
         public RivalStatus StatusOf(int index)
         {
