@@ -64,7 +64,7 @@ namespace SporeTribal.Rendering
             switch (cam.cameraType)
             {
                 case CameraType.Game: return Application.isPlaying || bendInEditMode;
-                case CameraType.SceneView: return (Application.isPlaying || bendInEditMode) && bendInSceneView;
+                case CameraType.SceneView: return bendInSceneView;
                 default: return false;
             }
         }
