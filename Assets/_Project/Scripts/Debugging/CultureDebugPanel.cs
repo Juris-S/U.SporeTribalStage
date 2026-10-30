@@ -7,6 +7,7 @@ using SporeTribal.Economy;
 using SporeTribal.Inputs;
 using SporeTribal.Villagers;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
 namespace SporeTribal.Debugging
@@ -21,6 +22,9 @@ namespace SporeTribal.Debugging
         [SerializeField] private int hitDamage = 5;
 
         private const float StatusSeconds = 3f;
+        private const float ColourRowSpacing = 2f;
+        private const float SkinSpread = 0.382f;
+        private const float ColourRowSearch = 4f;
 
         private readonly StringBuilder text = new StringBuilder();
         private readonly List<VillagerUnit> selected = new List<VillagerUnit>();
@@ -84,6 +88,35 @@ namespace SporeTribal.Debugging
                 if (v == match.Player) continue;
                 if (ally) v.DeclareAlliance(match.Player); else v.Surrender();
             }
+        }
+
+        private void SpawnColourRow()
+        {
+            var director = FindAnyObjectByType<TribeProgressionDirector>();
+            var match = FindAnyObjectByType<MatchDirector>();
+            if (director == null || match == null) { Report("Needs a TribeProgressionDirector and a MatchDirector in the scene"); return; }
+            VillagerSpawner spawner = null;
+            foreach (VillagerSpawner candidate in FindObjectsByType<VillagerSpawner>())
+                if (candidate.Village == match.Player) { spawner = candidate; break; }
+            if (spawner == null) { Report("No spawner for the player village"); return; }
+
+            Camera camera = Camera.main;
+            if (camera == null || !Physics.Raycast(camera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f)), out RaycastHit view, float.MaxValue, LayerMask.GetMask("Ground")))
+            {
+                Report("Screen centre is not over the ground");
+                return;
+            }
+
+            var palette = director.Palette;
+            float skinStart = UnityEngine.Random.value;
+            Vector3 origin = view.point;
+            for (int i = 0; i < palette.Count; i++)
+            {
+                Vector3 at = origin + new Vector3((i - (palette.Count - 1) * 0.5f) * ColourRowSpacing, 0f, 0f);
+                if (NavMesh.SamplePosition(at, out NavMeshHit ground, ColourRowSearch, NavMesh.AllAreas)) at = ground.position;
+                spawner.SpawnAt(at).PreviewTribeColour(palette[i].colour, Mathf.Repeat(skinStart + i * SkinSpread, 1f));
+            }
+            Report($"Spawned {palette.Count} villagers, one per tribe colour");
         }
 
         private void DamageSelected(int amount)
@@ -171,6 +204,7 @@ namespace SporeTribal.Debugging
             if (GUI.Button(new Rect(12f, y, 110f, 26f), "Win: conquest")) ForceEnd(true, false);
             if (GUI.Button(new Rect(126f, y, 110f, 26f), "Win: alliance")) ForceEnd(true, true);
             if (GUI.Button(new Rect(240f, y, 110f, 26f), "Lose")) ForceEnd(false, false);
+            if (GUI.Button(new Rect(12f, y + 30f, 170f, 26f), "Spawn all tribe colours")) SpawnColourRow();
         }
 
         private static string ActivityLabel(int index)
