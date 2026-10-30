@@ -1,8 +1,41 @@
 # Spore Tribal Stage Recreation
 
+![A wide view of the whole island, with every tribe's village visible](docs/images/island-overview.jpg)
+
 A fan recreation of the **Tribal Stage** from Maxis' *Spore* (2008), built in Unity. Command a small tribe, gather food, arm your villagers, and decide whether to win your neighbours over with music or crush them with clubs.
 
 This is a non-commercial fan project made for learning. It is not affiliated with or endorsed by Maxis or Electronic Arts. *Spore* is a trademark of Electronic Arts Inc.
+
+## Video
+
+[![Watch the video on YouTube](https://img.youtube.com/vi/if0YKyDoHdk/maxresdefault.jpg)](https://youtu.be/if0YKyDoHdk)
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/villagers-gathering-berries.png" alt="Villagers walking through a meadow towards berry bushes" width="100%"><br>
+      Villagers gathering berries.
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/tribes-clashing.png" alt="Three tribes clashing around a village" width="100%"><br>
+      Three tribes clash with each other.
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/villagers-razing-hut.png" alt="Armed villagers attacking a purple-roofed rival hut" width="100%"><br>
+      Armed villagers raze a rival hut.
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/villagers-performing-didgeridoos.png" alt="A line of villagers playing didgeridoos, music notes rising above them, facing a rival tribe" width="100%"><br>
+      Villagers with didgeridoos attempt to win over a rival tribe with a performance.
+    </td>
+  </tr>
+</table>
+
+![A top-down view of the island showing the villages of every tribe](docs/images/island-top-down-all-tribes.jpg)
 
 ## What is in it
 
@@ -98,8 +131,8 @@ Unity 6, Universal Render Pipeline, Input System, Cinemachine, NavMesh, PrimeTwe
 - Character models: Creative Characters FREE by ithappy.
 - Humanoid animations: Human Animations (FREE version) by Kevin Iglesias.
 
-## License
+## Licence
 
-The code and original content in this repository are released under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). You may read, learn from, modify and share it for any noncommercial purpose, as long as you keep the `Required Notice` line in the license file. Commercial use, including reselling it, is not permitted.
+The code and original content in this repository are released under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). You may read, learn from, modify and share it for any non-commercial purpose, as long as you keep the `Required Notice` line in the licence file. Commercial use, including reselling it, is not permitted.
 
-The license covers only the work in this repository by its author. Third-party assets listed under Credits keep their own licenses and terms.
+The licence covers only the work in this repository by its author. Third-party assets listed under Credits keep their own licences and terms.
