@@ -13,6 +13,8 @@ namespace SporeTribal.UI
     {
         private const float SelectedTint = 0.9f;
         private const float IdleTint = 0.5f;
+        private const float MaxScreenFraction = 0.65f;
+        private const float MinPanelScale = 0.45f;
 
         private sealed class Chip
         {
@@ -129,6 +131,16 @@ namespace SporeTribal.UI
             }
 
             panel.style.display = count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            FitToScreen();
+        }
+
+        private void FitToScreen()
+        {
+            float layoutHeight = panel.layout.height;
+            float screenHeight = HudLayer.Root.layout.height;
+            if (float.IsNaN(layoutHeight) || float.IsNaN(screenHeight) || layoutHeight <= 0f || screenHeight <= 0f) return;
+            float scale = Mathf.Clamp(screenHeight * MaxScreenFraction / layoutHeight, MinPanelScale, 1f);
+            panel.style.scale = new Scale(new Vector3(scale, scale, 1f));
         }
 
         private Chip Add(VillagerUnit unit)

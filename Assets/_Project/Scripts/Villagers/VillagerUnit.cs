@@ -556,6 +556,7 @@ namespace SporeTribal.Villagers
         public Vector3[] PathCorners => agent.hasPath ? agent.path.corners : System.Array.Empty<Vector3>();
 
         public bool IsChieftain => isChieftain;
+        public Transform VisualRoot => rig.transform;
         public Vector3 FaceCentre => model.FaceCentre;
         public Vector3 FaceForward => model.FaceForward;
         public void MakeChieftain()
