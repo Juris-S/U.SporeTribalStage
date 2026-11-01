@@ -7,13 +7,14 @@ using SporeTribal.Combat;
 using SporeTribal.Definitions;
 using SporeTribal.Economy;
 using SporeTribal.Feedback;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace SporeTribal.Villagers
 {
     [RequireComponent(typeof(NavMeshAgent), typeof(Health))]
-    public class VillagerUnit : MonoBehaviour
+    public partial class VillagerUnit : MonoBehaviour
     {
         private static readonly List<VillagerUnit> all = new List<VillagerUnit>();
         public static IReadOnlyList<VillagerUnit> All => all;
@@ -134,7 +135,7 @@ namespace SporeTribal.Villagers
         private float chargeAngle;
         private Color skinTone;
         private float clipUntil;
-        private static readonly Dictionary<Village, float> tribeTones = new Dictionary<Village, float>();
+        [AutoStaticsCleanup] private static Dictionary<Village, float> tribeTones = new Dictionary<Village, float>();
         private const float TribeToneGap = 0.4f;
         private MaterialPropertyBlock markerBlock;
         private Renderer markerRenderer;
